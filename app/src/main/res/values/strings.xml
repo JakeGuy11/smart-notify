@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">smartNotify</string>
+    <string name="main_header_text">smartNotify</string>
+    <string name="favourite_label_text">Favourited Channels</string>
+    <string name="all_label_text">All Channels</string>
+    <string name="add_channel_button_desc">All Channels</string>
 </resources>
