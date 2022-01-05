@@ -3,7 +3,11 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="app/src/main/res/drawable/heart.xml" value="0.39427083333333335" />
+        <entry key="app/src/main/res/drawable/heart_checked.xml" value="0.39427083333333335" />
+        <entry key="app/src/main/res/drawable/settings_circle.xml" value="0.39427083333333335" />
         <entry key="app/src/main/res/layout/activity_main.xml" value="0.378125" />
+        <entry key="app/src/main/res/layout/channel_entry.xml" value="0.33" />
       </map>
     </option>
   </component>

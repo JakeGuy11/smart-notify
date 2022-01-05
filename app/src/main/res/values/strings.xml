@@ -4,4 +4,8 @@
     <string name="favourite_label_text">Favourited Channels</string>
     <string name="all_label_text">All Channels</string>
     <string name="add_channel_button_desc">All Channels</string>
+    <string name="sample_text">Channel Name Here</string>
+    <string name="pfp_desc">Profile Picture</string>
+    <string name="heart_button_desc">Favourited button</string>
+    <string name="settings_button_desc">Settings button circle</string>
 </resources>

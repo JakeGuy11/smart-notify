@@ -17,7 +17,11 @@ public class MainActivity extends AppCompatActivity {
 
         // Configure the action bar
         ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null)
-            actionBar.setTitle("Home");
+        if (actionBar != null) actionBar.setTitle("Home");
+    }
+
+    private boolean addChannel(Channel channel) {
+
+        return true;
     }
 }

@@ -6,5 +6,9 @@
     <color name="pri_main">#FF00EAFF</color>
     <color name="pri_variant">#FF008793</color>
     <color name="sec_main">#FFFF00FF</color>
-    <color name="sec_variant">#9F009F</color>
+    <color name="sec_variant">#FF9F009F</color>
+    <color name="heart_fill_true">#FFFF0048</color>
+    <color name="heart_fill_false">#00000000</color>
+    <color name="heart_border_true">#FFFF0048</color>
+    <color name="heart_border_false">#FF333333</color>
 </resources>
