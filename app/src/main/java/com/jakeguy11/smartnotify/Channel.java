@@ -54,6 +54,7 @@ public class Channel {
 
         this.channelName = newChannelName;
         this.channelID = parseChannelIdentifier(newChannelIdentifier);
+        this.updatePicture();
     }
 
     /**
