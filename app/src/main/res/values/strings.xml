@@ -8,4 +8,18 @@
     <string name="pfp_desc">Profile Picture</string>
     <string name="heart_button_desc">Favourited button</string>
     <string name="settings_button_desc">Settings button circle</string>
+    <!-- Below here are the descriptions for the Add Channel dialogue -->
+    <string name="add_channel_name_label">Channel Name</string>
+    <string name="add_channel_name_autofill">Enter the channel name here…</string>
+    <string name="add_channel_ID_label">Channel URL or ID</string>
+    <string name="add_channel_ID_autofill">ex. UC8rcEBzJSleTkf_-agPM20g</string>
+    <string name="add_channel_favourite">Favourite</string>
+    <string name="add_channel_uploads_notify">Get notifications for uploads</string>
+    <string name="add_channel_uploads_filter_label">Filter notifications by keywords</string>
+    <string name="add_channel_uploads_filter_autofill">Enter a keyword…</string>
+    <string name="add_channel_streams_notify">Get notifications for livestreams</string>
+    <string name="add_channel_streams_filter_label">Filter notifications by keywords</string>
+    <string name="add_channel_streams_filter_autofill">Enter a keyword…</string>
+    <string name="add_channel_save">Add Channel</string>
+    <string name="add_channel_cancel">Cancel</string>
 </resources>

@@ -1,14 +1,22 @@
 package com.jakeguy11.smartnotify;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.View;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -28,50 +36,41 @@ public class MainActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) actionBar.setTitle("Home");
 
-        Channel testCh1 = new Channel("くらげP 1", "WADATAKEAKI");
-        System.out.println(testCh1.getPictureURL());
-        testCh1.favourited = true;
-        addChannelToView(testCh1);
+        // Add a listener for the Add button
+        findViewById(R.id.btnAddChannel).setOnClickListener(view -> {
+            Intent addChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
+            startActivityForResult(addChannelIntent, 738212183); // This code doesn't matter, it just needs to be unique
+        });
 
-        Channel testCh2 = new Channel("くらげP 2", "WADATAKEAKI");
-        System.out.println(testCh2.getPictureURL());
-        testCh2.favourited = true;
-        addChannelToView(testCh2);
-
-        Channel testCh3 = new Channel("くらげP 3", "WADATAKEAKI");
-        System.out.println(testCh3.getPictureURL());
-        testCh3.favourited = true;
-        addChannelToView(testCh3);
-
-        Channel testCh4 = new Channel("くらげP 4", "WADATAKEAKI");
-        System.out.println(testCh4.getPictureURL());
-        addChannelToView(testCh4);
-
-        Channel testCh5 = new Channel("くらげP 5", "WADATAKEAKI");
-        System.out.println(testCh5.getPictureURL());
-        addChannelToView(testCh5);
-
-        Channel testCh6 = new Channel("くらげP 6", "WADATAKEAKI");
-        System.out.println(testCh6.getPictureURL());
-        addChannelToView(testCh6);
-
-        Channel testCh7 = new Channel("Ex + Fire 7", "https://www.youtube.com/channel/UCVovvq34gd0ps5cVYNZrc7A");
-        System.out.println(testCh7.getPictureURL());
-        addChannelToView(testCh7);
-
-        Channel testCh8 = new Channel("Ex + Fire 8", "https://www.youtube.com/channel/UCVovvq34gd0ps5cVYNZrc7A");
-        System.out.println(testCh8.getPictureURL());
-        addChannelToView(testCh8);
-
-        Channel testCh9 = new Channel("Ex + Fire 9", "https://www.youtube.com/channel/UCVovvq34gd0ps5cVYNZrc7A");
-        System.out.println(testCh9.getPictureURL());
-        addChannelToView(testCh9);
-
-        Channel testCh10 = new Channel("Ex + Fire 10", "https://www.youtube.com/channel/UCVovvq34gd0ps5cVYNZrc7A");
-        System.out.println(testCh10.getPictureURL());
-        addChannelToView(testCh10);
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent returnedData) {
+        switch (requestCode) {
+            case 738212183: // Returning from the addChannel activity
+                if (resultCode == 0) {
+                    // Everything went well, add it to the view
+                    Channel returnedChannel = Channel.fromJSON(returnedData.getDataString());
+                    addChannelToView(returnedChannel);
+                } else if (resultCode == 1) {
+                    // User cancelled it. Do nothing, maybe add a message in the future
+                    System.out.println("User cancelled the addition");
+                } else {
+                    // Some other error - notify the user
+                }
+                break;
+            default:
+                System.out.println("Received unknown code: " + requestCode);
+                break;
+        }
+        MainActivity.super.onActivityResult(requestCode, resultCode, returnedData);
+    }
+
+    /**
+     * Add a channel entry to the home page. Automatically categorizes it as favourite vs. all.
+     *
+     * @param channel the Channel object to add.
+     */
     private void addChannelToView(Channel channel) {
         // Create an inflater so we can customize resources
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
