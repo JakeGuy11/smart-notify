@@ -3,6 +3,8 @@ package com.jakeguy11.smartnotify;
 import android.content.Context;
 import android.os.StrictMode;
 
+import androidx.annotation.NonNull;
+
 import com.google.gson.Gson;
 
 import org.jsoup.Jsoup;
@@ -372,5 +374,16 @@ public class Channel {
 
             return foundID;
         } else return identifier;
+    }
+
+    /**
+     * JSONify the Channel and get it as a String.
+     *
+     * @return the raw JSON containing the details of the channel.
+     */
+    @NonNull
+    public String toString() {
+        Gson gsonMaker = new Gson();
+        return gsonMaker.toJson(this);
     }
 }

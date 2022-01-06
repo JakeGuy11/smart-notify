@@ -4,6 +4,7 @@ import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 
 public class AddChannelActivity extends AppCompatActivity {
@@ -18,7 +19,16 @@ public class AddChannelActivity extends AppCompatActivity {
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) actionBar.setTitle("Add a Channel");
 
-        // Add a listener for the save button
+        // Create a sample channel to return
+        Channel ch = new Channel("Baelz", "https://www.youtube.com/channel/UCgmPnx-EEeOrZSg5Tiw7ZRQ");
+        ch.favourited = true;
+
+        // Create the intent to return
+        Intent returnChannel = new Intent();
+        returnChannel.setData(Uri.parse(ch.toString()));
+        setResult(0, returnChannel);
+
+        finish();
 
     }
 }
