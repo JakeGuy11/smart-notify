@@ -18,10 +18,10 @@ public class MainActivity extends AppCompatActivity {
         // Configure the action bar
         ActionBar actionBar = getSupportActionBar();
         if (actionBar != null) actionBar.setTitle("Home");
-    }
 
-    private boolean addChannel(Channel channel) {
-
-        return true;
+        Channel testCh = new Channel();
+        testCh.setChannelName("くらげP");
+        testCh.setChannelID("WADATAKEAKI"); // That's the channel ID - URL is https://www.youtube.com/c/WADATAKEAKI
+        System.out.println(testCh.getPictureURL());
     }
 }

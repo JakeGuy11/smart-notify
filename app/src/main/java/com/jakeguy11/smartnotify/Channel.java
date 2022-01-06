@@ -1,15 +1,21 @@
 package com.jakeguy11.smartnotify;
 
 import android.content.Context;
+import android.os.StrictMode;
 
 import com.google.gson.Gson;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -79,7 +85,8 @@ public class Channel {
         String parsedID = parseChannelIdentifier(newIdentifier);
 
         if (parsedID == null) return;
-        this.channelName = parsedID;
+        this.channelID = parsedID;
+        this.updatePicture();
     }
 
     /**
@@ -209,21 +216,25 @@ public class Channel {
      * @return The status of the update. True if success, false if fail.
      */
     public boolean updatePicture() {
-        // Try parsing it with /channel/
+        // Set the thread policy so we can do network calls synchronously
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
+
         Document site;
+        // Try parsing it with /channel/
         try {
-            site = Jsoup.connect("https://www.youtube.com/channel/" + this.channelID).get();
-        } catch (IOException e1) {
+            site = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/channel/" + this.channelID)));
+        } catch (Exception e1) {
             // No? Try with /c/
             try {
-                site = Jsoup.connect("https://www.youtube.com/c/" + this.channelID).get();
-            } catch (IOException e2) {
+                site = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/c/" + this.channelID)));
+            } catch (Exception e2) {
                 // If not, try legacy with /user/
                 try {
-                    site = Jsoup.connect("https://www.youtube.com/user/" + this.channelID).get();
+                    site = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/user/" + this.channelID)));
                 }
                 // If none of those worked, the ID is likely not valid.
-                catch (IOException e3) {
+                catch (Exception e3) {
+                    System.out.println("Could not get site content!\n" + e3);
                     return false;
                 }
             }
@@ -232,17 +243,41 @@ public class Channel {
         String foundPictureURL;
         try {
             // Get where we know the image will be. Should return the URL to the image
-            foundPictureURL = Objects.requireNonNull(site.getElementById("channel-header-container")).getElementsByTag("img").attr("src");
+            foundPictureURL = site.getElementsByAttributeValue("property", "og:image").attr("content");
         } catch (Exception e) {
-            // For some reason, it couldn't find the picture - print a message, return false
-            System.out.println("Error - YouTube parsing failed!\n" + e);
+            // For some reason, it couldn't find the picture
             return false;
         }
 
-        System.out.println("Delete me later - found URL is " + foundPictureURL);
-
         this.pictureURL = foundPictureURL;
         return true;
+    }
+
+    /**
+     * Get the raw HTML DOM content of a URL. Returns null if the URL is unavailable
+     *
+     * @param givenURL The URL to fetch.
+     * @return A string containing the entire HTML content of the URL.
+     */
+    private String getSiteContent(String givenURL) {
+        URL url;
+        try {
+            url = new URL(givenURL);
+        } catch (MalformedURLException e) {
+            return null;
+        }
+
+        StringBuilder builder = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream(),
+                StandardCharsets.UTF_8))) {
+            for (String line; (line = reader.readLine()) != null; ) {
+                builder.append(line);
+            }
+        } catch (IOException e) {
+            return null;
+        }
+
+        return builder.toString();
     }
 
     /**
