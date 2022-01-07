@@ -8,6 +8,7 @@
     <string name="pfp_desc">Profile Picture</string>
     <string name="heart_button_desc">Favourited button</string>
     <string name="settings_button_desc">Settings button circle</string>
+
     <!-- Below here are the descriptions for the Add Channel dialogue -->
     <string name="add_channel_name_label">Channel Name:</string>
     <string name="add_channel_name_autofill">Enter the channel name here…</string>

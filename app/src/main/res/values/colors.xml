@@ -2,6 +2,7 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="disabled_grey">#FF888888</color>
     <color name="default_text">#FF333333</color>
     <color name="pri_main">#FF00EAFF</color>
     <color name="pri_variant">#FF008793</color>

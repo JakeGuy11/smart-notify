@@ -85,7 +85,8 @@
                 android:id="@+id/chkFavourite"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/add_channel_favourite" />
+                android:text="@string/add_channel_favourite"
+                android:textSize="16sp" />
 
             <Space
                 android:layout_width="match_parent"
@@ -113,13 +114,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="@string/add_channel_uploads_notify" />
+                android:text="@string/add_channel_uploads_notify"
+                android:textSize="16sp" />
 
             <CheckBox
                 android:id="@+id/chkUploadFilter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/add_channel_uploads_filter_label" />
+                android:text="@string/add_channel_uploads_filter_label"
+                android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -146,7 +149,6 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:ems="10"
-                            android:enabled="false"
                             android:hint="@string/add_channel_uploads_filter_autofill"
                             android:inputType="textPersonName"
                             app:layout_constraintBottom_toBottomOf="parent"
@@ -216,13 +218,15 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:checked="true"
-                android:text="@string/add_channel_streams_notify" />
+                android:text="@string/add_channel_streams_notify"
+                android:textSize="16sp" />
 
             <CheckBox
                 android:id="@+id/chkStreamFilter"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/add_channel_streams_filter_label" />
+                android:text="@string/add_channel_streams_filter_label"
+                android:textSize="16sp" />
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -249,7 +253,6 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:ems="10"
-                            android:enabled="true"
                             android:hint="@string/add_channel_uploads_filter_autofill"
                             android:inputType="textPersonName"
                             app:layout_constraintBottom_toBottomOf="parent"
