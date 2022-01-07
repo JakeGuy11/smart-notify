@@ -31,7 +31,15 @@ public class AddChannelActivity extends AppCompatActivity {
         if (actionBar != null) actionBar.setTitle("Add a Channel");
 
         // Create the channel we'll return
-        Channel retChannel = new Channel();
+        Channel startingChannel = (Channel) getIntent().getSerializableExtra("channel_to_edit");
+        // If there is no starting channel, create a new one. If there is, populate the form with its data.
+        if (startingChannel == null)
+            startingChannel = new Channel();
+        else
+            populateForm(startingChannel);
+
+        // Clone our startingChannel to another channel that can effectively be final
+        Channel retChannel = new Channel(startingChannel);
 
         // Start by adding an event listener to the Add Filter button
         // Get the elements we'll interact with
@@ -109,6 +117,48 @@ public class AddChannelActivity extends AppCompatActivity {
         btnClearStreamFilter.setOnClickListener(view -> {
             textStreamFilter.setText("");
         });
+
+    }
+
+    private void populateForm(Channel channel) {
+        // Set the channel name
+        ((EditText)findViewById(R.id.textName)).setText(channel.getChannelName());
+
+        // Set the channel ID
+        ((EditText)findViewById(R.id.textID)).setText(channel.getChannelID());
+
+        // Set the favourite
+        ((CheckBox)findViewById(R.id.chkFavourite)).setChecked(channel.isFavourited());
+
+        // Set the upload notification setting
+        ((CheckBox)findViewById(R.id.chkUploadNotifs)).setChecked(channel.getNotifyUploads());
+
+        // Set the upload filter enabled setting
+        ((CheckBox)findViewById(R.id.chkUploadFilter)).setChecked(channel.getFilterUploads());
+
+        // Set the upload filters
+        EditText uploadField = findViewById(R.id.textUploadFilter);
+        ImageButton uploadButton = findViewById(R.id.btnUploadAdd);
+        for (String item : channel.getUploadKeywords()) {
+            uploadField.setText(item);
+            uploadButton.performClick();
+        }
+        uploadField.setText("");
+
+        // Set the stream notification setting
+        ((CheckBox)findViewById(R.id.chkStreamNotifs)).setChecked(channel.getNotifyStreams());
+
+        // Set the stream filter enabled setting
+        ((CheckBox)findViewById(R.id.chkStreamFilter)).setChecked(channel.getFilterStreams());
+
+        // Set the stream filters
+        EditText streamField = findViewById(R.id.textStreamFilter);
+        ImageButton streamButton = findViewById(R.id.btnStreamAdd);
+        for (String item : channel.getStreamKeywords()) {
+            streamField.setText(item);
+            streamButton.performClick();
+        }
+        streamField.setText("");
 
     }
 

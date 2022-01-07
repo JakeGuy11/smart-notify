@@ -14,6 +14,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -44,6 +45,13 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Handle the result of another activity after it is closed.
+     *
+     * @param requestCode  The request code sent to the activity. Should be unique for each intent.
+     * @param resultCode   The code returned by the activity.
+     * @param returnedData Any data returned by the activity.
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent returnedData) {
         switch (requestCode) {
@@ -57,6 +65,7 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("User cancelled the addition");
                 } else {
                     // Some other error - notify the user
+                    System.out.println("Something went terribly, terribly wrong. You should not be reading this.");
                 }
                 break;
             default:
@@ -81,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
         profilePic.setImageDrawable(getDrawableFromURL(channel.getPictureURL()));
         profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
         ((TextView) entryToAdd.findViewById(R.id.labelChannelName)).setText(channel.getChannelName());
-        if (channel.favourited) {
+        if (channel.isFavourited()) {
             // Change the favourited button, add to the favourite view
             ((ImageView) entryToAdd.findViewById(R.id.imageHeart)).setImageDrawable(getResources().getDrawable(R.drawable.heart_checked));
             ((LinearLayout) findViewById(R.id.boxFavChannels)).addView(entryToAdd);

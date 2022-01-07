@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -22,18 +23,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class Channel {
+public class Channel implements Serializable {
 
     private String channelName;
     private String channelID;
+    private boolean favourited;
     private boolean notifyUploads;
     private boolean notifyStreams;
+    private boolean filterUploads;
+    private boolean filterStreams;
     private List<String> uploadKeywords = new ArrayList<>();
     private List<String> streamKeywords = new ArrayList<>();
     private String pictureURL;
     public String latestUploadID;
     public boolean notifiedLive;
-    public boolean favourited;
 
     /**
      * Create an empty Channel object.
@@ -57,6 +60,15 @@ public class Channel {
         this.channelName = newChannelName;
         this.channelID = parseChannelIdentifier(newChannelIdentifier);
         this.updatePicture();
+    }
+
+    /**
+     * Create a copy of a channel.
+     *
+     * @param channelToClone the channel to copy
+     */
+    public Channel(Channel channelToClone) {
+
     }
 
     /**
@@ -102,6 +114,22 @@ public class Channel {
     }
 
     /**
+     * Check whether or not this channel is favourited
+     * @param favourite whether or not this channel is favourited
+     */
+    public void setFavourited(boolean favourite) {
+        this.favourited = favourite;
+    }
+
+    /**
+     * Check whether or not this channel is favourited
+     * @return whether or not this channel is favourited
+     */
+    public boolean isFavourited() {
+        return this.favourited;
+    }
+
+    /**
      * Set whether or not to send a notification for new uploads.
      *
      * @param notify Whether or not to notify the user on uploads.
@@ -120,6 +148,24 @@ public class Channel {
     }
 
     /**
+     * Set whether or not to filter new uploads.
+     *
+     * @param filter Whether or not to filter upload notifications.
+     */
+    public void setFilterUploads(boolean filter) {
+        this.filterUploads = filter;
+    }
+
+    /**
+     * Check whether or not to filter new uploads.
+     *
+     * @return whether or not to filter new uploads.
+     */
+    public boolean getFilterUploads() {
+        return this.filterUploads;
+    }
+
+    /**
      * Set whether or not to send a notification for livestreams.
      *
      * @param notify Whether or not to notify the user on livestreams.
@@ -135,6 +181,24 @@ public class Channel {
      */
     public boolean getNotifyStreams() {
         return this.notifyStreams;
+    }
+
+    /**
+     * Set whether or not to filter livestreams.
+     *
+     * @param filter Whether or not to filter livestreams.
+     */
+    public void setFilterStreams(boolean filter) {
+        this.filterStreams = filter;
+    }
+
+    /**
+     * Check whether or not to filter livestreams.
+     *
+     * @return whether or not to filter livestreams.
+     */
+    public boolean getFilterStreams() {
+        return this.filterStreams;
     }
 
     /**
@@ -386,4 +450,5 @@ public class Channel {
         Gson gsonMaker = new Gson();
         return gsonMaker.toJson(this);
     }
+
 }
