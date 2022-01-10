@@ -17,6 +17,7 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class AddChannelActivity extends AppCompatActivity {
 
@@ -118,6 +119,59 @@ public class AddChannelActivity extends AppCompatActivity {
             textStreamFilter.setText("");
         });
 
+        // Add an event listener for the cancel button
+        findViewById(R.id.btnCancelChannel).setOnClickListener(view -> {
+            setResult(1);
+            finish();
+        });
+
+        // Add an event listener for the save button
+        findViewById(R.id.btnSaveChannel).setOnClickListener(view -> {
+            // Get all the form elements as variables
+            EditText txtName = findViewById(R.id.textName);
+            EditText txtID = findViewById(R.id.textID);
+            CheckBox chkFavourite = findViewById(R.id.chkFavourite);
+            CheckBox chkUploadNotifs = findViewById(R.id.chkUploadNotifs);
+            CheckBox chkUploadFilter = findViewById(R.id.chkUploadFilter);
+            CheckBox chkStreamNotifs = findViewById(R.id.chkStreamNotifs);
+            CheckBox chkStreamFilter = findViewById(R.id.chkStreamFilter);
+
+            // Check to make sure the name and channel are non-null
+            boolean nameNull = txtName.getText().toString().equals("");
+            boolean channelNull = txtID.getText().toString().equals("");
+            if (nameNull || channelNull) {
+                // Show an error message, quit
+                if (channelNull) showErrorMessage("You cannot have an empty channel!");
+                if (nameNull) showErrorMessage("You cannot have an empty name!");
+                return;
+            }
+
+            // Assign all the properties to the channel object
+            // First verify that the channel ID is valid
+            if (!retChannel.setChannelID(txtID.getText().toString())) {
+                showErrorMessage("That is not a valid channel ID/URL.");
+                return;
+            }
+            retChannel.setChannelName(txtName.getText().toString());
+            retChannel.setFavourited(chkFavourite.isChecked());
+            retChannel.setNotifyUploads(chkUploadNotifs.isChecked());
+            retChannel.setNotifyStreams(chkStreamNotifs.isChecked());
+            retChannel.setFilterUploads(chkUploadFilter.isChecked());
+            retChannel.setFilterStreams(chkStreamFilter.isChecked());
+
+            // Create a URI to store the channel in, return it
+            Intent retData = new Intent();
+            retData.setData(Uri.parse(retChannel.toString()));
+            setResult(0, retData);
+            finish();
+        });
+
+    }
+
+    private void showErrorMessage(String msg) {
+        int length = Toast.LENGTH_LONG;
+        if (msg.length() <= 30) length = Toast.LENGTH_SHORT;
+        Toast.makeText(getApplicationContext(),msg, length).show();
     }
 
     private void populateForm(Channel channel) {

@@ -96,12 +96,12 @@ public class Channel implements Serializable {
      *
      * @param newIdentifier The ID to update with.
      */
-    public void setChannelID(String newIdentifier) {
+    public boolean setChannelID(String newIdentifier) {
         String parsedID = parseChannelIdentifier(newIdentifier);
 
-        if (parsedID == null) return;
+        if (parsedID == null) return false;
         this.channelID = parsedID;
-        this.updatePicture();
+        return this.updatePicture();
     }
 
     /**
