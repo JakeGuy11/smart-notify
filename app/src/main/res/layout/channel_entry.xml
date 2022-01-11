@@ -84,15 +84,4 @@
 
     </LinearLayout>
 
-    <ImageView
-        android:id="@+id/imageHeart"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
-        android:contentDescription="@string/heart_button_desc"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/boxSettingsButton"
-        app:layout_constraintTop_toTopOf="parent"
-        app:srcCompat="@drawable/heart_unchecked"
-        tools:ignore="RedundantDescriptionCheck" />
 </androidx.constraintlayout.widget.ConstraintLayout>

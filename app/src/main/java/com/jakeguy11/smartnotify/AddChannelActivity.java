@@ -130,7 +130,7 @@ public class AddChannelActivity extends AppCompatActivity {
             // Get all the form elements as variables
             EditText txtName = findViewById(R.id.textName);
             EditText txtID = findViewById(R.id.textID);
-            CheckBox chkFavourite = findViewById(R.id.chkFavourite);
+            //CheckBox chkFavourite = findViewById(R.id.chkFavourite);
             CheckBox chkUploadNotifs = findViewById(R.id.chkUploadNotifs);
             CheckBox chkUploadFilter = findViewById(R.id.chkUploadFilter);
             CheckBox chkStreamNotifs = findViewById(R.id.chkStreamNotifs);
@@ -153,7 +153,7 @@ public class AddChannelActivity extends AppCompatActivity {
                 return;
             }
             retChannel.setChannelName(txtName.getText().toString());
-            retChannel.setFavourited(chkFavourite.isChecked());
+            //retChannel.setFavourited(chkFavourite.isChecked());
             retChannel.setNotifyUploads(chkUploadNotifs.isChecked());
             retChannel.setNotifyStreams(chkStreamNotifs.isChecked());
             retChannel.setFilterUploads(chkUploadFilter.isChecked());
@@ -182,7 +182,7 @@ public class AddChannelActivity extends AppCompatActivity {
         ((EditText)findViewById(R.id.textID)).setText(channel.getChannelID());
 
         // Set the favourite
-        ((CheckBox)findViewById(R.id.chkFavourite)).setChecked(channel.isFavourited());
+        //((CheckBox)findViewById(R.id.chkFavourite)).setChecked(channel.isFavourited());
 
         // Set the upload notification setting
         ((CheckBox)findViewById(R.id.chkUploadNotifs)).setChecked(channel.getNotifyUploads());

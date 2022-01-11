@@ -81,13 +81,10 @@ public class MainActivity extends AppCompatActivity {
         profilePic.setImageDrawable(getDrawableFromURL(channel.getPictureURL()));
         profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
         ((TextView) entryToAdd.findViewById(R.id.labelChannelName)).setText(channel.getChannelName());
-        if (channel.isFavourited()) {
-            // Change the favourited button, add to the favourite view
-            ((ImageView) entryToAdd.findViewById(R.id.imageHeart)).setImageDrawable(getResources().getDrawable(R.drawable.heart_checked));
-            ((LinearLayout) findViewById(R.id.boxFavChannels)).addView(entryToAdd);
-            return;
-        }
-        ((LinearLayout) findViewById(R.id.boxAllChannels)).addView(entryToAdd);
+        // Add edit listeners
+
+        // Add the entry to the screen
+        ((LinearLayout) findViewById(R.id.boxChannelsHolder)).addView(entryToAdd);
     }
 
     /**
