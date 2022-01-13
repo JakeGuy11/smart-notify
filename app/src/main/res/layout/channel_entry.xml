@@ -84,4 +84,13 @@
 
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/channelIdTag"
+        android:layout_width="0px"
+        android:layout_height="0px"
+        android:visibility="gone"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

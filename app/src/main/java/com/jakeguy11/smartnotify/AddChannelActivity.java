@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewManager;
@@ -38,6 +39,9 @@ public class AddChannelActivity extends AppCompatActivity {
             startingChannel = new Channel();
         else
             populateForm(startingChannel);
+
+        // Check to see if we were passed a view to edit
+        String idToReturn = (String) getIntent().getSerializableExtra("entry_to_edit");
 
         // Clone our startingChannel to another channel that can effectively be final
         Channel retChannel = new Channel(startingChannel);
@@ -161,6 +165,7 @@ public class AddChannelActivity extends AppCompatActivity {
 
             // Create a URI to store the channel in, return it
             Intent retData = new Intent();
+            retData.putExtra("entry_to_edit", idToReturn);
             retData.setData(Uri.parse(retChannel.toString()));
             setResult(0, retData);
             finish();

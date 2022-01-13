@@ -38,7 +38,7 @@
             android:orientation="vertical" >
 
             <androidx.constraintlayout.widget.ConstraintLayout
-                android:id="@+id/labelNoChannels"
+                android:id="@+id/boxNoChannels"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
 
