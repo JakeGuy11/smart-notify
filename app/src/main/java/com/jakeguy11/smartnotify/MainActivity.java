@@ -5,25 +5,26 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import org.w3c.dom.Text;
-
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -42,6 +43,12 @@ public class MainActivity extends AppCompatActivity {
             Intent addChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
             startActivityForResult(addChannelIntent, 738212183); // This code doesn't matter, it just needs to be unique
         });
+
+        // Get all the data saved and add them to the view
+        for (File file : getAllJSONs()) {
+            Channel channelToAdd = Channel.fromJSON(getFileString(file));
+            addChannelToView(channelToAdd);
+        }
 
     }
 
@@ -74,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
                     // Add the channel
                     addChannelToView(returnedChannel);
                     // Save the channel
-                    saveChannelJSON(returnedChannel);
+                    if (!saveAndFetchChannelData(returnedChannel)) showErrorMessage("Could not write channel to filesystem. Please report this error.");
                 } else if (resultCode == 0) {
                     // User cancelled it. Do nothing, maybe add a message in the future
                     System.out.println("User cancelled the addition");
@@ -113,9 +120,9 @@ public class MainActivity extends AppCompatActivity {
                     // Then write the JSON with the updated info
                     if (!entryToEdit.equals(returnedChannel.getChannelID())) {
                         // Delete the old entry
-                        deleteChannelJSON(entryToEdit);
+                        if (!deleteChannelData(entryToEdit)) showErrorMessage("Could not access filesystem to delete that channel. Please report this error.");
                     }
-                    saveChannelJSON(returnedChannel);
+                    if (!saveAndFetchChannelData(returnedChannel)) showErrorMessage("Could not write channel to filesystem. Please report this error.");
                 } else if (resultCode == 0) {
                     // User cancelled it. Do nothing
                     System.out.println("User cancelled the edit");
@@ -164,25 +171,71 @@ public class MainActivity extends AppCompatActivity {
         ((LinearLayout) findViewById(R.id.boxChannelsHolder)).addView(entryToAdd);
     }
 
-    private boolean deleteChannelJSON(String idToDelete) {
+    private boolean deleteChannelData(String idToDelete) {
         File dir = getFilesDir();
         File file = new File(dir, idToDelete + ".json");
         return file.delete();
     }
 
-    private boolean saveChannelJSON(Channel channel) {
+    private File[] getAllJSONs() {
+        File dir = getFilesDir();
+        return dir.listFiles();
+    }
+
+    private String getFileString(File file) {
+        StringBuilder text = new StringBuilder();
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            String line;
+
+            while ((line = br.readLine()) != null) {
+                text.append(line);
+                text.append('\n');
+            }
+            br.close();
+        } catch (IOException e) { return null; }
+
+        return text.toString();
+    }
+
+    private boolean saveAndFetchChannelData(Channel channel) {
+        System.out.println("IN SAVING DATA");
         try
         {
             // Create the file's directories
-            String fileName = channel.getChannelID() + ".json";
-            OutputStreamWriter outputStreamWriter = new OutputStreamWriter(openFileOutput(fileName, Context.MODE_PRIVATE));
-            outputStreamWriter.write(channel.toString());
-            outputStreamWriter.close();
+            File dir = new File(this.getFilesDir() + File.separator + channel.getChannelID());
+            if (!dir.exists()) {
+                // Folder doesn't exist - create it
+                dir.mkdir();
+            }
+
+            // Create the JSON
+            File jsonFile = new File(dir, channel.getChannelID() + ".json");
+            FileOutputStream outStream = new FileOutputStream(jsonFile);
+            OutputStreamWriter outStreamWriter = new OutputStreamWriter(outStream);
+            outStreamWriter.write(channel.toString());
+            outStreamWriter.close();
+
+            // Create the image
+            Drawable pfp = getDrawableFromURL(channel.getPictureURL());
+            Drawable resizedPfp = resizeDrawable(pfp);
+            Bitmap imageToWrite = ((BitmapDrawable)resizedPfp).getBitmap();
+            File imageFile = new File(dir, channel.getChannelID() + ".png");
+            outStream = new FileOutputStream(imageFile);
+            imageToWrite.compress(Bitmap.CompressFormat.PNG, 100, outStream);
+            outStream.flush();
+            outStream.close();
 
             return true;
         }
         // If there are any errors, return false
-        catch (IOException e) { e.printStackTrace(); return false; }
+        catch (IOException e) { System.out.println("failed?" + e.toString()); e.printStackTrace(); return false; }
+    }
+
+    private void showErrorMessage(String msg) {
+        int length = Toast.LENGTH_LONG;
+        if (msg.length() <= 30) length = Toast.LENGTH_SHORT;
+        Toast.makeText(getApplicationContext(),msg, length).show();
     }
 
     /**
@@ -199,4 +252,11 @@ public class MainActivity extends AppCompatActivity {
             return null;
         }
     }
+
+    private Drawable resizeDrawable(Drawable image) {
+        Bitmap b = ((BitmapDrawable)image).getBitmap();
+        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 100, 100, false);
+        return new BitmapDrawable(getResources(), bitmapResized);
+    }
+
 }
