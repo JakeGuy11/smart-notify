@@ -125,7 +125,7 @@ public class AddChannelActivity extends AppCompatActivity {
 
         // Add an event listener for the cancel button
         findViewById(R.id.btnCancelChannel).setOnClickListener(view -> {
-            setResult(1);
+            setResult(0);
             finish();
         });
 
@@ -163,11 +163,13 @@ public class AddChannelActivity extends AppCompatActivity {
             retChannel.setFilterUploads(chkUploadFilter.isChecked());
             retChannel.setFilterStreams(chkStreamFilter.isChecked());
 
+            System.out.println("Returning channel:\n" + retChannel);
+
             // Create a URI to store the channel in, return it
             Intent retData = new Intent();
             retData.putExtra("entry_to_edit", idToReturn);
             retData.setData(Uri.parse(retChannel.toString()));
-            setResult(0, retData);
+            setResult(1, retData);
             finish();
         });
 
@@ -196,13 +198,20 @@ public class AddChannelActivity extends AppCompatActivity {
         ((CheckBox)findViewById(R.id.chkUploadFilter)).setChecked(channel.getFilterUploads());
 
         // Set the upload filters
-        EditText uploadField = findViewById(R.id.textUploadFilter);
-        ImageButton uploadButton = findViewById(R.id.btnUploadAdd);
-        for (String item : channel.getUploadKeywords()) {
-            uploadField.setText(item);
-            uploadButton.performClick();
+        for (String filterToAdd : channel.getUploadKeywords()) {
+            View entry = generateFilterKeyword(filterToAdd);
+
+            // Add a listener to delete the filter keyword
+            ImageView btnDeleteFilter = entry.findViewById(R.id.imgDeleteKeyword);
+            btnDeleteFilter.setOnClickListener(view -> {
+                // Delete the entry
+                channel.removeUploadKeyword(filterToAdd);
+                ((ViewManager) entry.getParent()).removeView(entry);
+            });
+
+            // Add the view to the page
+            ((LinearLayout) findViewById(R.id.layoutUploadFilters)).addView(entry);
         }
-        uploadField.setText("");
 
         // Set the stream notification setting
         ((CheckBox)findViewById(R.id.chkStreamNotifs)).setChecked(channel.getNotifyStreams());
@@ -211,13 +220,20 @@ public class AddChannelActivity extends AppCompatActivity {
         ((CheckBox)findViewById(R.id.chkStreamFilter)).setChecked(channel.getFilterStreams());
 
         // Set the stream filters
-        EditText streamField = findViewById(R.id.textStreamFilter);
-        ImageButton streamButton = findViewById(R.id.btnStreamAdd);
-        for (String item : channel.getStreamKeywords()) {
-            streamField.setText(item);
-            streamButton.performClick();
+        for (String filterToAdd : channel.getStreamKeywords()) {
+            View entry = generateFilterKeyword(filterToAdd);
+
+            // Add a listener to delete the filter keyword
+            ImageView btnDeleteFilter = entry.findViewById(R.id.imgDeleteKeyword);
+            btnDeleteFilter.setOnClickListener(view -> {
+                // Delete the entry
+                channel.removeStreamKeyword(filterToAdd);
+                ((ViewManager) entry.getParent()).removeView(entry);
+            });
+
+            // Add the view to the page
+            ((LinearLayout) findViewById(R.id.layoutStreamFilters)).addView(entry);
         }
-        streamField.setText("");
 
     }
 

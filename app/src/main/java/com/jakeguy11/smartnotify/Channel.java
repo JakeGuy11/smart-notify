@@ -54,6 +54,7 @@ public class Channel implements Serializable {
      * @param newChannelIdentifier The channel ID *or* URL to initialize the channel with.
      */
     public Channel(String newChannelName, String newChannelIdentifier) {
+        // Copy over the notification settings
         this.notifyStreams = true;
         this.notifyUploads = true;
 
@@ -68,7 +69,18 @@ public class Channel implements Serializable {
      * @param channelToClone the channel to copy
      */
     public Channel(Channel channelToClone) {
-
+        this.channelName = channelToClone.getChannelName();
+        this.channelID = channelToClone.getChannelID();
+        this.favourited = channelToClone.isFavourited();
+        this.notifyUploads = channelToClone.notifyUploads;
+        this.notifyStreams = channelToClone.notifyStreams;
+        this.filterUploads = channelToClone.filterUploads;
+        this.filterStreams = channelToClone.filterStreams;
+        this.uploadKeywords = channelToClone.getUploadKeywords();
+        this.streamKeywords = channelToClone.getStreamKeywords();
+        this.pictureURL = channelToClone.pictureURL;
+        this.latestUploadID = channelToClone.latestUploadID;
+        this.notifiedLive = channelToClone.notifiedLive;
     }
 
     /**
