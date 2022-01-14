@@ -1,10 +1,11 @@
 package com.jakeguy11.smartnotify;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
@@ -23,7 +24,6 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
@@ -97,15 +97,18 @@ public class MainActivity extends AppCompatActivity {
                     deleteChannelData(entryToEdit);
 
                     // Go through each entry to see if it's the one we want to edit
-                    View viewToEdit = null;
+                    View viewToFind = null;
                     for (int i = 0; i < ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount(); i++) {
                         View currentView = ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildAt(i);
 
                         if (((TextView)currentView.findViewById(R.id.channelIdTag)).getText().equals(entryToEdit))
-                            viewToEdit = currentView;
+                            viewToFind = currentView;
                     }
 
-                    if (viewToEdit == null) return; // Nothing to edit
+                    if (viewToFind == null) return; // Nothing to edit
+
+                    // Copy it over, to make it effectively final
+                    View viewToEdit = viewToFind;
 
                     // Update the params of the entry
                     ((TextView)viewToEdit.findViewById(R.id.channelIdTag)).setText(returnedChannel.getChannelID());
@@ -116,8 +119,8 @@ public class MainActivity extends AppCompatActivity {
                     profilePic.setImageDrawable(getDrawableFromURL(returnedChannel.getPictureURL()));
                     profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
 
-                    // Update the listener
-                    viewToEdit.findViewById(R.id.boxSettingsButton).setOnClickListener(e -> {
+                    // Update the edit listener
+                    viewToEdit.findViewById(R.id.boxEditButton).setOnClickListener(e -> {
                         Intent editChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
                         editChannelIntent.putExtra("entry_to_edit", returnedChannel.getChannelID());
                         editChannelIntent.putExtra("channel_to_edit", returnedChannel);
@@ -125,11 +128,34 @@ public class MainActivity extends AppCompatActivity {
                         startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
                     });
 
+                    // Update the delete listener
+                    // Add delete listener
+                    viewToEdit.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
+                        // Show a confirmation dialogue
+                        AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
+                        confirmBuilder.setTitle("Delete " + returnedChannel.getChannelName() +"?");
+                        confirmBuilder.setMessage("Are you sure you want to stop receiving notifications from " + returnedChannel.getChannelName() + "?");
+                        confirmBuilder.setCancelable(true);
+                        confirmBuilder.setPositiveButton("Yes", (dialogInterface, i) -> {
+                            // Now delete the entry
+                            ((LinearLayout)viewToEdit.getParent()).removeView(viewToEdit);
+                            if (deleteChannelData(returnedChannel.getChannelID()))
+                                showErrorMessage(returnedChannel.getChannelName() + " deleted");
+                            else
+                                showErrorMessage("Entry" + returnedChannel.getChannelName() + " could not be deleted!");
+                        });
+                        confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
+                            // User cancelled it
+                            System.out.println("Entry not deleted");
+                        }));
+                        confirmBuilder.show();
+                    });
+
                     // Check if the ID was changed - if it was, delete the old JSON
                     // Then write the JSON with the updated info
                     if (!entryToEdit.equals(returnedChannel.getChannelID())) {
                         // Delete the old entry
-                        if (!deleteChannelData(entryToEdit)) showErrorMessage("Could not access filesystem to delete that channel. Please report this error.");
+                        deleteChannelData(entryToEdit);
                     }
                     if (!saveAndFetchChannelData(returnedChannel)) showErrorMessage("Could not write channel to filesystem. Please report this error.");
                 } else if (resultCode == 0) {
@@ -173,13 +199,35 @@ public class MainActivity extends AppCompatActivity {
         profilePic.setImageDrawable(Drawable.createFromPath(imageFile.getPath()));
         profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
 
-        // Add edit listeners
-        entryToAdd.findViewById(R.id.boxSettingsButton).setOnClickListener(e -> {
+        // Add edit listener
+        entryToAdd.findViewById(R.id.boxEditButton).setOnClickListener(ev -> {
             Intent editChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
             editChannelIntent.putExtra("entry_to_edit", channel.getChannelID());
             editChannelIntent.putExtra("channel_to_edit", channel);
             editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
             startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
+        });
+
+        // Add delete listener
+        entryToAdd.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
+            // Show a confirmation dialogue
+            AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
+            confirmBuilder.setTitle("Delete " + channel.getChannelName() +"?");
+            confirmBuilder.setMessage("Are you sure you want to stop receiving notifications from " + channel.getChannelName() + "?");
+            confirmBuilder.setCancelable(true);
+            confirmBuilder.setPositiveButton("Yes", (dialogInterface, i) -> {
+                // Now delete the entry
+                ((LinearLayout)entryToAdd.getParent()).removeView(entryToAdd);
+                if (deleteChannelData(channel.getChannelID()))
+                    showErrorMessage(channel.getChannelName() + " deleted");
+                else
+                    showErrorMessage("Entry" + channel.getChannelName() + " could not be deleted!");
+            });
+            confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
+                // User cancelled it
+                System.out.println("Entry not deleted");
+            }));
+            confirmBuilder.show();
         });
 
         // Add the entry to the screen
