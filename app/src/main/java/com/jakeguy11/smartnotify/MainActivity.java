@@ -1,5 +1,6 @@
 package com.jakeguy11.smartnotify;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -19,12 +20,17 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,6 +47,7 @@ public class MainActivity extends AppCompatActivity {
         // Add a listener for the Add button
         findViewById(R.id.btnAddChannel).setOnClickListener(view -> {
             Intent addChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
+            addChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
             startActivityForResult(addChannelIntent, 738212183); // This code doesn't matter, it just needs to be unique
         });
 
@@ -68,20 +75,10 @@ public class MainActivity extends AppCompatActivity {
                     Channel returnedChannel = Channel.fromJSON(returnedData.getDataString());
                     System.out.println("Channel returned\n\n" + returnedChannel);
 
-                    // Make sure the ID doesn't exist
-                    for (int i = 0; i < ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount(); i++) {
-                        View currentView = ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildAt(i);
-
-                        if (((TextView)currentView.findViewById(R.id.channelIdTag)).getText().equals(returnedChannel.getChannelID())) {
-                            System.out.println("ID already exists!");
-                            return;
-                        }
-                    }
-
-                    // Add the channel
-                    addChannelToView(returnedChannel);
                     // Save the channel
                     if (!saveAndFetchChannelData(returnedChannel)) showErrorMessage("Could not write channel to filesystem. Please report this error.");
+                    // Add the channel to the view
+                    addChannelToView(returnedChannel);
                 } else if (resultCode == 0) {
                     // User cancelled it. Do nothing, maybe add a message in the future
                     System.out.println("User cancelled the addition");
@@ -95,6 +92,9 @@ public class MainActivity extends AppCompatActivity {
                     // Everything went well - edit the entry
                     Channel returnedChannel = Channel.fromJSON(returnedData.getDataString());
                     String entryToEdit = (String) returnedData.getSerializableExtra("entry_to_edit");
+
+                    // Start by deleting the old data
+                    deleteChannelData(entryToEdit);
 
                     // Go through each entry to see if it's the one we want to edit
                     View viewToEdit = null;
@@ -115,6 +115,15 @@ public class MainActivity extends AppCompatActivity {
                     ImageView profilePic = viewToEdit.findViewById(R.id.imgChannelPic);
                     profilePic.setImageDrawable(getDrawableFromURL(returnedChannel.getPictureURL()));
                     profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
+
+                    // Update the listener
+                    viewToEdit.findViewById(R.id.boxSettingsButton).setOnClickListener(e -> {
+                        Intent editChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
+                        editChannelIntent.putExtra("entry_to_edit", returnedChannel.getChannelID());
+                        editChannelIntent.putExtra("channel_to_edit", returnedChannel);
+                        editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
+                        startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
+                    });
 
                     // Check if the ID was changed - if it was, delete the old JSON
                     // Then write the JSON with the updated info
@@ -139,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Add a channel entry to the home page. Automatically categorizes it as favourite vs. all.
+     * Add a channel entry to the home page. Automatically categorizes it as favourite vs. all. Assumes the entry has already been written to system
      *
      * @param channel the Channel object to add.
      */
@@ -154,16 +163,22 @@ public class MainActivity extends AppCompatActivity {
         // Get then customize an entry
         View entryToAdd = (View) inflater.inflate(R.layout.channel_entry, null);
         ImageView profilePic = entryToAdd.findViewById(R.id.imgChannelPic);
-        profilePic.setImageDrawable(getDrawableFromURL(channel.getPictureURL()));
-        profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
+
+        // Set the texts
         ((TextView) entryToAdd.findViewById(R.id.labelChannelName)).setText(channel.getChannelName());
         ((TextView) entryToAdd.findViewById(R.id.channelIdTag)).setText(channel.getChannelID());
+
+        // Set the image
+        File imageFile = new File(this.getFilesDir() + File.separator + channel.getChannelID() + File.separator + channel.getChannelID() + ".png");
+        profilePic.setImageDrawable(Drawable.createFromPath(imageFile.getPath()));
+        profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
 
         // Add edit listeners
         entryToAdd.findViewById(R.id.boxSettingsButton).setOnClickListener(e -> {
             Intent editChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
             editChannelIntent.putExtra("entry_to_edit", channel.getChannelID());
             editChannelIntent.putExtra("channel_to_edit", channel);
+            editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
             startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
         });
 
@@ -172,14 +187,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean deleteChannelData(String idToDelete) {
-        File dir = getFilesDir();
-        File file = new File(dir, idToDelete + ".json");
-        return file.delete();
+        System.out.println("Asked to delete id " + idToDelete);
+        File file = new File(this.getFilesDir() + File.separator + idToDelete);
+        return deleteFolderRecursive(file);
+    }
+
+    private boolean deleteFolderRecursive(File fileOrDirectory) {
+
+        if (fileOrDirectory.isDirectory())
+            for (File child : fileOrDirectory.listFiles())
+                deleteFolderRecursive(child);
+
+        return fileOrDirectory.delete();
+    }
+
+    private String[] channelsAlreadyAdded() {
+        List<String> idsList = new ArrayList<>();
+        for (File dir : getFilesDir().listFiles()) {
+            idsList.add(dir.getName());
+        }
+        return idsList.toArray(new String[0]);
     }
 
     private File[] getAllJSONs() {
         File dir = getFilesDir();
-        return dir.listFiles();
+        List<File> jsonFiles = new ArrayList<>();
+        for (File currentDir : dir.listFiles()) {
+            File[] jsonFilesFromCurrentDir = currentDir.listFiles(new FileFilter() {
+                @Override
+                public boolean accept(File file) {
+                    return file.getName().contains(".json");
+                }
+            });
+            jsonFiles.addAll(Arrays.asList(jsonFilesFromCurrentDir));
+        }
+        return jsonFiles.toArray(new File[0]);
     }
 
     private String getFileString(File file) {
@@ -199,7 +241,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private boolean saveAndFetchChannelData(Channel channel) {
-        System.out.println("IN SAVING DATA");
         try
         {
             // Create the file's directories
@@ -229,7 +270,7 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         // If there are any errors, return false
-        catch (IOException e) { System.out.println("failed?" + e.toString()); e.printStackTrace(); return false; }
+        catch (IOException e) { return false; }
     }
 
     private void showErrorMessage(String msg) {
@@ -255,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Drawable resizeDrawable(Drawable image) {
         Bitmap b = ((BitmapDrawable)image).getBitmap();
-        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 100, 100, false);
+        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 128, 128, false);
         return new BitmapDrawable(getResources(), bitmapResized);
     }
 

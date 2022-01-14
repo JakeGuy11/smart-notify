@@ -46,6 +46,9 @@ public class AddChannelActivity extends AppCompatActivity {
         // Clone our startingChannel to another channel that can effectively be final
         Channel retChannel = new Channel(startingChannel);
 
+        // Get a list of all the IDs that exist
+        String[] existantIDs = (String[]) getIntent().getSerializableExtra("channels_already_added");
+
         // Start by adding an event listener to the Add Filter button
         // Get the elements we'll interact with
         ImageButton btnAddUploadFilter = findViewById(R.id.btnUploadAdd);
@@ -162,6 +165,15 @@ public class AddChannelActivity extends AppCompatActivity {
             retChannel.setNotifyStreams(chkStreamNotifs.isChecked());
             retChannel.setFilterUploads(chkUploadFilter.isChecked());
             retChannel.setFilterStreams(chkStreamFilter.isChecked());
+
+            // Make sure the channel doesn't already exist
+            for (String currentExistantId : existantIDs) {
+                if (retChannel.getChannelID().equals(currentExistantId)) {
+                    // it already exists - throw a tantrum
+                    showErrorMessage("That channel ID already exists!");
+                    return;
+                }
+            }
 
             System.out.println("Returning channel:\n" + retChannel);
 
