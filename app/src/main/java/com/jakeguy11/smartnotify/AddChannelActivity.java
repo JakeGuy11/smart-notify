@@ -166,6 +166,7 @@ public class AddChannelActivity extends AppCompatActivity {
             // First verify that the channel ID is valid
             if (!retChannel.setChannelID(txtID.getText().toString())) {
                 showErrorMessage("That is not a valid channel ID/URL.");
+                spinner.setVisibility(View.GONE);
                 return;
             }
             retChannel.setChannelName(txtName.getText().toString());
@@ -208,10 +209,7 @@ public class AddChannelActivity extends AppCompatActivity {
         ((EditText)findViewById(R.id.textName)).setText(channel.getChannelName());
 
         // Set the channel ID
-        ((EditText)findViewById(R.id.textID)).setText(channel.getChannelID());
-
-        // Set the favourite
-        //((CheckBox)findViewById(R.id.chkFavourite)).setChecked(channel.isFavourited());
+        ((EditText)findViewById(R.id.textID)).setText(channel.getReadableID());
 
         // Set the upload notification setting
         ((CheckBox)findViewById(R.id.chkUploadNotifs)).setChecked(channel.getNotifyUploads());

@@ -1,6 +1,5 @@
 package com.jakeguy11.smartnotify;
 
-import android.content.Context;
 import android.os.StrictMode;
 
 import androidx.annotation.NonNull;
@@ -11,8 +10,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
@@ -27,7 +24,6 @@ public class Channel implements Serializable {
 
     private String channelName;
     private String channelID;
-    private boolean favourited;
     private boolean notifyUploads;
     private boolean notifyStreams;
     private boolean filterUploads;
@@ -35,8 +31,16 @@ public class Channel implements Serializable {
     private List<String> uploadKeywords = new ArrayList<>();
     private List<String> streamKeywords = new ArrayList<>();
     private String pictureURL;
+    private String readableID;
+    private ChannelType channelType;
     public String latestUploadID;
     public boolean notifiedLive;
+
+    private enum ChannelType {
+        CHANNEL,
+        C,
+        USER
+    }
 
     /**
      * Create an empty Channel object.
@@ -48,30 +52,13 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Create a new Channel object and initialize it with the name and ID.
-     *
-     * @param newChannelName       The name to initialize the channel with.
-     * @param newChannelIdentifier The channel ID *or* URL to initialize the channel with.
-     */
-    public Channel(String newChannelName, String newChannelIdentifier) {
-        // Copy over the notification settings
-        this.notifyStreams = true;
-        this.notifyUploads = true;
-
-        this.channelName = newChannelName;
-        this.channelID = parseChannelIdentifier(newChannelIdentifier);
-        this.updatePicture();
-    }
-
-    /**
      * Create a copy of a channel.
      *
      * @param channelToClone the channel to copy
      */
     public Channel(Channel channelToClone) {
-        this.channelName = channelToClone.getChannelName();
-        this.channelID = channelToClone.getChannelID();
-        this.favourited = channelToClone.isFavourited();
+        this.channelName = channelToClone.channelName;
+        this.channelID = channelToClone.channelID;
         this.notifyUploads = channelToClone.notifyUploads;
         this.notifyStreams = channelToClone.notifyStreams;
         this.filterUploads = channelToClone.filterUploads;
@@ -79,6 +66,8 @@ public class Channel implements Serializable {
         this.uploadKeywords = channelToClone.getUploadKeywords();
         this.streamKeywords = channelToClone.getStreamKeywords();
         this.pictureURL = channelToClone.pictureURL;
+        this.readableID = channelToClone.readableID;
+        this.channelType = channelToClone.channelType;
         this.latestUploadID = channelToClone.latestUploadID;
         this.notifiedLive = channelToClone.notifiedLive;
     }
@@ -109,11 +98,35 @@ public class Channel implements Serializable {
      * @param newIdentifier The ID to update with.
      */
     public boolean setChannelID(String newIdentifier) {
+        // Get the readable ID
         String parsedID = parseChannelIdentifier(newIdentifier);
-
         if (parsedID == null) return false;
-        this.channelID = parsedID;
-        return this.updatePicture();
+        this.readableID = parsedID;
+
+        // Update the picture
+        if (!this.updatePicture()) return false;
+
+        // Set the channel ID from the readable ID
+        this.channelID = getTrueId(this.readableID);
+        if (this.channelID != null) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public String getRSSURL() {
+        if (this.channelType == ChannelType.CHANNEL) {
+            return "https://www.youtube.com/feeds/videos.xml?channel_id=" + this.channelID;
+        } else if (this.channelType == ChannelType.USER) {
+            return "https://www.youtube.com/feeds/videos.xml?user=" + this.channelID;
+        } else {
+            return null;
+        }
+    }
+
+    public String getReadableID() {
+        return this.readableID;
     }
 
     /**
@@ -123,22 +136,6 @@ public class Channel implements Serializable {
      */
     public String getChannelID() {
         return this.channelID;
-    }
-
-    /**
-     * Check whether or not this channel is favourited
-     * @param favourite whether or not this channel is favourited
-     */
-    public void setFavourited(boolean favourite) {
-        this.favourited = favourite;
-    }
-
-    /**
-     * Check whether or not this channel is favourited
-     * @return whether or not this channel is favourited
-     */
-    public boolean isFavourited() {
-        return this.favourited;
     }
 
     /**
@@ -214,13 +211,6 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Remove all the keywords from the Stream filter.
-     */
-    public void clearStreamKeywords() {
-        this.streamKeywords = new ArrayList<>();
-    }
-
-    /**
      * Remove a keyword from the Stream filter.
      *
      * @param keyword The keyword to remove.
@@ -249,13 +239,6 @@ public class Channel implements Serializable {
      */
     public List<String> getStreamKeywords() {
         return this.streamKeywords;
-    }
-
-    /**
-     * Remove all the keywords from the Upload filter.
-     */
-    public void clearUploadKeywords() {
-        this.uploadKeywords = new ArrayList<>();
     }
 
     /**
@@ -289,35 +272,26 @@ public class Channel implements Serializable {
         return this.uploadKeywords;
     }
 
+    private String getTrueId(String id) {
+        Document site = getChannelSite(id);
+        if (site == null) return null;
+        if (this.channelType != ChannelType.C) return id;
+
+        // Now parse the site for the true id
+        String trueURL = site.getElementsByAttributeValue("rel", "canonical").get(1).attr("href");
+        String[] splitURL = trueURL.split("/");
+        this.channelType = ChannelType.CHANNEL;
+        return splitURL[splitURL.length-1];
+    }
+
     /**
      * Update the profile picture of the channel.
      *
      * @return The status of the update. True if success, false if fail.
      */
     public boolean updatePicture() {
-        // Set the thread policy so we can do network calls synchronously
-        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
-
-        Document site;
-        // Try parsing it with /channel/
-        try {
-            site = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/channel/" + this.channelID)));
-        } catch (Exception e1) {
-            // No? Try with /c/
-            try {
-                site = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/c/" + this.channelID)));
-            } catch (Exception e2) {
-                // If not, try legacy with /user/
-                try {
-                    site = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/user/" + this.channelID)));
-                }
-                // If none of those worked, the ID is likely not valid.
-                catch (Exception e3) {
-                    System.out.println("Could not get site content!\n" + e3);
-                    return false;
-                }
-            }
-        }
+        Document site = getChannelSite(this.readableID);
+        if (site == null) return false;
 
         String foundPictureURL;
         try {
@@ -330,6 +304,34 @@ public class Channel implements Serializable {
 
         this.pictureURL = foundPictureURL;
         return true;
+    }
+
+    private Document getChannelSite(String id) {
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
+
+        Document retSite;
+        // Try parsing it with /channel/
+        try {
+            retSite = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/channel/" + id)));
+            this.channelType = ChannelType.CHANNEL;
+        } catch (Exception e1) {
+            // No? Try with /c/
+            try {
+                retSite = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/c/" + id)));
+                this.channelType = ChannelType.C;
+            } catch (Exception e2) {
+                // If not, try legacy with /user/
+                try {
+                    retSite = Jsoup.parse(Objects.requireNonNull(getSiteContent("https://www.youtube.com/user/" + id)));
+                    this.channelType = ChannelType.USER;
+                }
+                // If none of those worked, the ID is likely not valid.
+                catch (Exception e3) {
+                    return null;
+                }
+            }
+        }
+        return retSite;
     }
 
     /**
@@ -369,37 +371,6 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Turn this channel into a JSON, write it to file. Saved as [pathPrefix]/channelID.json.
-     *
-     * @param pathPrefix The folder to save into. Must be a *single* folder
-     * @param cxt        The application context.
-     * @return The status of the write. True if everything was successful, false if it failed.
-     */
-    public boolean writeJSON(String pathPrefix, Context cxt) {
-        // Turn this channel into a JSON string
-        Gson gsonMaker = new Gson();
-        String formattedChannel = gsonMaker.toJson(this);
-
-        // Write the JSON to file
-        // Check if the pathPrefix exists, if not, create it
-        File dir = new File(cxt.getFilesDir(), pathPrefix);
-        if (!dir.exists()) if (!dir.mkdir()) return false;
-
-        // Write the JSON
-        try {
-            File jsonFile = new File(dir, this.channelID + ".json");
-            FileWriter writer = new FileWriter(jsonFile);
-            writer.append(formattedChannel);
-            writer.flush();
-            writer.close();
-        } catch (Exception e) {
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Convert a JSON string to an actual Channel object.
      *
      * @param jsonData The JSON string to parse.
@@ -409,22 +380,6 @@ public class Channel implements Serializable {
         // Parse the JSON, return it
         Gson jsonParser = new Gson();
         return jsonParser.fromJson(jsonData, Channel.class);
-    }
-
-    /**
-     * Delete this channel's JSON entry.
-     *
-     * @param pathPrefix The folder the JSON is saved into. Must be a *single* folder.
-     * @param cxt        The application context.
-     * @return The status of the deletion. True if successful, false if it failed.
-     */
-    public boolean deleteChannel(String pathPrefix, Context cxt) {
-        // Find the file
-        File dir = new File(cxt.getFilesDir(), pathPrefix);
-        File jsonFile = new File(dir, this.channelID + ".json");
-
-        // Delete it, return the status
-        return jsonFile.delete();
     }
 
     /**

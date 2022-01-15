@@ -187,6 +187,7 @@ public class MainActivity extends AppCompatActivity {
      * @param channel the Channel object to add.
      */
     private void addChannelToView(Channel channel) {
+        System.out.println(channel.getRSSURL());
         // Check if the "no channel" message is still there - if it is, delete it
         View noChannelBox = findViewById(R.id.boxNoChannels);
         if (noChannelBox != null) noChannelBox.setVisibility(View.GONE);
