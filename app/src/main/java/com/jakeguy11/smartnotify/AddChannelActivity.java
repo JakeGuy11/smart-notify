@@ -38,8 +38,12 @@ public class AddChannelActivity extends AppCompatActivity {
         // If there is no starting channel, create a new one. If there is, populate the form with its data.
         if (startingChannel == null)
             startingChannel = new Channel();
-        else
+        else {
             populateForm(startingChannel);
+
+            // Change the button text
+            ((Button) findViewById(R.id.btnSaveChannel)).setText("Update");
+        }
 
         // Check to see if we were passed a view to edit
         String idToReturn = (String) getIntent().getSerializableExtra("entry_to_edit");
