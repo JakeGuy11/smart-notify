@@ -17,6 +17,7 @@ import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -134,6 +135,10 @@ public class AddChannelActivity extends AppCompatActivity {
 
         // Add an event listener for the save button
         findViewById(R.id.btnSaveChannel).setOnClickListener(view -> {
+            // First, show the spinner
+            ProgressBar spinner = findViewById(R.id.spnAddingChannel);
+            spinner.setVisibility(View.VISIBLE);
+
             // Get all the form elements as variables
             EditText txtName = findViewById(R.id.textName);
             EditText txtID = findViewById(R.id.textID);
