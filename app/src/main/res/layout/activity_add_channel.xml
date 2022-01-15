@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/background"
     tools:context=".AddChannelActivity">
 
     <ScrollView
@@ -36,7 +37,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/add_channel_name_label"
-                    android:textColor="@color/black"
+                    android:textColor="@color/main_text"
                     android:textSize="18sp" />
 
                 <EditText
@@ -46,7 +47,9 @@
                     android:ems="10"
                     android:hint="@string/add_channel_name_autofill"
                     android:inputType="text"
-                    android:minHeight="48dp" />
+                    android:minHeight="48dp"
+                    android:textColor="@color/main_text"
+                    android:textColorHint="@color/dim_text" />
             </LinearLayout>
 
             <Space
@@ -64,7 +67,7 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="@string/add_channel_ID_label"
-                    android:textColor="@color/black"
+                    android:textColor="@color/main_text"
                     android:textSize="18sp" />
 
                 <EditText
@@ -74,7 +77,9 @@
                     android:ems="10"
                     android:hint="@string/add_channel_ID_autofill"
                     android:inputType="text"
-                    android:minHeight="48dp" />
+                    android:minHeight="48dp"
+                    android:textColor="@color/main_text"
+                    android:textColorHint="@color/dim_text" />
             </LinearLayout>
             <!--
             <Space
@@ -101,7 +106,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/add_channel_uploads_heading"
-                    android:textColor="#000000"
+                    android:textColor="@color/main_text"
                     android:textSize="24sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -115,6 +120,7 @@
                 android:layout_height="wrap_content"
                 android:checked="true"
                 android:text="@string/add_channel_uploads_notify"
+                android:textColor="@color/main_text"
                 android:textSize="16sp" />
 
             <CheckBox
@@ -122,6 +128,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/add_channel_uploads_filter_label"
+                android:textColor="@color/main_text"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -151,12 +158,14 @@
                             android:ems="10"
                             android:hint="@string/add_channel_uploads_filter_autofill"
                             android:inputType="textPersonName"
+                            android:textColor="@color/main_text"
+                            android:textColorHint="@color/dim_text"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent"
                             tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
 
-                        <ImageButton
+                        <ImageView
                             android:id="@+id/btnUploadAdd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -167,7 +176,7 @@
                             app:srcCompat="@android:drawable/ic_input_add"
                             tools:ignore="SpeakableTextPresentCheck" />
 
-                        <ImageButton
+                        <ImageView
                             android:id="@+id/btnUploadClear"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -205,7 +214,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/add_channel_streams_heading"
-                    android:textColor="#000000"
+                    android:textColor="@color/main_text"
                     android:textSize="24sp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
@@ -219,6 +228,7 @@
                 android:layout_height="wrap_content"
                 android:checked="true"
                 android:text="@string/add_channel_streams_notify"
+                android:textColor="@color/main_text"
                 android:textSize="16sp" />
 
             <CheckBox
@@ -226,6 +236,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="@string/add_channel_streams_filter_label"
+                android:textColor="@color/main_text"
                 android:textSize="16sp" />
 
             <LinearLayout
@@ -255,12 +266,14 @@
                             android:ems="10"
                             android:hint="@string/add_channel_uploads_filter_autofill"
                             android:inputType="textPersonName"
+                            android:textColor="@color/main_text"
+                            android:textColorHint="@color/dim_text"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent"
                             tools:ignore="TouchTargetSizeCheck,SpeakableTextPresentCheck" />
 
-                        <ImageButton
+                        <ImageView
                             android:id="@+id/btnStreamAdd"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -271,7 +284,7 @@
                             app:srcCompat="@android:drawable/ic_input_add"
                             tools:ignore="SpeakableTextPresentCheck" />
 
-                        <ImageButton
+                        <ImageView
                             android:id="@+id/btnStreamClear"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -309,6 +322,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/add_channel_save"
+                    android:textColor="@color/main_text"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
@@ -319,6 +333,7 @@
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="8dp"
                     android:text="@string/add_channel_cancel"
+                    android:textColor="@color/main_text"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toStartOf="@+id/btnSaveChannel"
                     app:layout_constraintTop_toTopOf="parent" />

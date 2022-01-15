@@ -46,7 +46,7 @@
             android:layout_marginStart="8dp"
             android:text="@string/sample_text"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-            android:textColor="@color/black" />
+            android:textColor="@color/main_text" />
     </LinearLayout>
 
     <LinearLayout

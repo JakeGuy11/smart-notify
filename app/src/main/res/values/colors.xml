@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Here are the colours specifically for the backgrounds -->
+    <color name="background">#FF36363A</color>
+    <color name="dim_text">#FF77777B</color>
+    <color name="main_text">#B6B6BF</color>
+    <!-- Here are the other things -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="disabled_grey">#FF888888</color>
     <color name="default_text">#FF333333</color>
-    <color name="pri_main">#FF00EAFF</color>
-    <color name="pri_variant">#FF008793</color>
-    <color name="sec_main">#FFFF00FF</color>
+    <color name="pri_main">#812C2C</color>
+    <color name="pri_variant">#5A1F1F</color>
+    <color name="sec_main">#295BA5</color>
     <color name="sec_variant">#FF9F009F</color>
     <color name="heart_fill_true">#FFFF0048</color>
     <color name="heart_fill_false">#00000000</color>

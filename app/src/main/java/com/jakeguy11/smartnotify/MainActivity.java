@@ -129,7 +129,6 @@ public class MainActivity extends AppCompatActivity {
                     });
 
                     // Update the delete listener
-                    // Add delete listener
                     viewToEdit.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
                         // Show a confirmation dialogue
                         AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
@@ -141,6 +140,15 @@ public class MainActivity extends AppCompatActivity {
                             ((LinearLayout)viewToEdit.getParent()).removeView(viewToEdit);
                             if (deleteChannelData(returnedChannel.getChannelID()))
                                 showErrorMessage(returnedChannel.getChannelName() + " deleted");
+
+                                System.out.println("About to remove");
+                                // Re-add the "no channel" message if there are no entries left
+                                if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
+                                    // There are none left
+                                    System.out.println("none left");
+                                    View noChannelBox = findViewById(R.id.boxNoChannels);
+                                    if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
+                                }
                             else
                                 showErrorMessage("Entry" + returnedChannel.getChannelName() + " could not be deleted!");
                         });
@@ -181,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
     private void addChannelToView(Channel channel) {
         // Check if the "no channel" message is still there - if it is, delete it
         View noChannelBox = findViewById(R.id.boxNoChannels);
-        if (noChannelBox != null) ((ViewManager) noChannelBox.getParent()).removeView(noChannelBox);
+        if (noChannelBox != null) noChannelBox.setVisibility(View.GONE);
 
         // Create an inflater so we can customize resources
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -220,6 +228,14 @@ public class MainActivity extends AppCompatActivity {
                 ((LinearLayout)entryToAdd.getParent()).removeView(entryToAdd);
                 if (deleteChannelData(channel.getChannelID()))
                     showErrorMessage(channel.getChannelName() + " deleted");
+
+                    System.out.println("About to remove");
+                    // Re-add the "no channel" message if there are no entries left
+                    if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
+                        // There are none left
+                        System.out.println("none left");
+                        if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
+                    }
                 else
                     showErrorMessage("Entry" + channel.getChannelName() + " could not be deleted!");
             });

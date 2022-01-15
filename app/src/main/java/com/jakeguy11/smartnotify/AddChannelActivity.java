@@ -52,8 +52,8 @@ public class AddChannelActivity extends AppCompatActivity {
 
         // Start by adding an event listener to the Add Filter button
         // Get the elements we'll interact with
-        ImageButton btnAddUploadFilter = findViewById(R.id.btnUploadAdd);
-        ImageButton btnClearUploadFilter = findViewById(R.id.btnUploadClear);
+        ImageView btnAddUploadFilter = findViewById(R.id.btnUploadAdd);
+        ImageView btnClearUploadFilter = findViewById(R.id.btnUploadClear);
         EditText textUploadFilter = findViewById(R.id.textUploadFilter);
 
         // Add handling for when a filter is added
@@ -91,8 +91,8 @@ public class AddChannelActivity extends AppCompatActivity {
         });
 
         // Do both of the above, but for streams
-        ImageButton btnAddStreamFilter = findViewById(R.id.btnStreamAdd);
-        ImageButton btnClearStreamFilter = findViewById(R.id.btnStreamClear);
+        ImageView btnAddStreamFilter = findViewById(R.id.btnStreamAdd);
+        ImageView btnClearStreamFilter = findViewById(R.id.btnStreamClear);
         EditText textStreamFilter = findViewById(R.id.textStreamFilter);
 
         // Add the stream listeners
@@ -173,6 +173,7 @@ public class AddChannelActivity extends AppCompatActivity {
 
             // Make sure the channel doesn't already exist
             for (String currentExistantId : existantIDs) {
+                if (currentExistantId.equals(idToReturn)) continue; // Skip if it's the same ID as the original
                 if (retChannel.getChannelID().equals(currentExistantId)) {
                     // it already exists - throw a tantrum
                     showErrorMessage("That channel ID already exists!");
