@@ -3,14 +3,28 @@ package com.jakeguy11.smartnotify;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewManager;
@@ -52,11 +66,61 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Get all the data saved and add them to the view
+        Channel tempChannel = null;
         for (File file : getAllJSONs()) {
             Channel channelToAdd = Channel.fromJSON(getFileString(file));
             addChannelToView(channelToAdd);
+            tempChannel = new Channel(channelToAdd);
         }
 
+        System.out.println("sending notif");
+
+        showNotification(tempChannel, "This is the video title", true);
+
+        System.out.println("sent");
+
+        // Start the periodic service
+        Intent periodicIntent = new Intent(this, NotificationChecker.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+        AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        // manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+    }
+
+    private void showNotification(Channel channel, String videoTitle, boolean isUpload) {
+        if(channel == null) return;
+
+        // Start by generating our params for the notification
+        String title = "";
+        if (isUpload) title = channel.getChannelName() + " has uploaded a video";
+        else title = channel.getChannelName() + " is live!";
+
+        // Get the PFP as a bitmap
+        File imageFile = new File(this.getFilesDir() + File.separator + channel.getChannelID() + File.separator + channel.getChannelID() + ".png");
+        Bitmap icon = BitmapFactory.decodeFile(imageFile.getPath());
+
+        // Create our notification manager
+        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(MainActivity.this, "default");
+
+        // Set the notification params
+        mBuilder.setContentTitle(title);
+        mBuilder.setContentText(videoTitle);
+        mBuilder.setLargeIcon(icon);
+        mBuilder.setSmallIcon(R.drawable.heart_checked);
+        mBuilder.setAutoCancel(true);
+
+        // Do some mandatory android stuff
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel notificationChannel = new NotificationChannel("10001", "NOTIFICATION_CHANNEL_NAME", importance);
+            mBuilder.setChannelId("10001");
+            assert mNotificationManager != null;
+            mNotificationManager.createNotificationChannel(notificationChannel);
+        }
+        assert mNotificationManager != null;
+
+        // Send the notification
+        mNotificationManager.notify((int) System.currentTimeMillis(), mBuilder.build());
     }
 
     /**
@@ -76,7 +140,8 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Channel returned\n\n" + returnedChannel);
 
                     // Save the channel
-                    if (!saveAndFetchChannelData(returnedChannel)) showErrorMessage("Could not write channel to filesystem. Please report this error.");
+                    if (!saveAndFetchChannelData(returnedChannel))
+                        showErrorMessage("Could not write channel to filesystem. Please report this error.");
                     // Add the channel to the view
                     addChannelToView(returnedChannel);
                 } else if (resultCode == 0) {
@@ -101,7 +166,7 @@ public class MainActivity extends AppCompatActivity {
                     for (int i = 0; i < ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount(); i++) {
                         View currentView = ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildAt(i);
 
-                        if (((TextView)currentView.findViewById(R.id.channelIdTag)).getText().equals(entryToEdit))
+                        if (((TextView) currentView.findViewById(R.id.channelIdTag)).getText().equals(entryToEdit))
                             viewToFind = currentView;
                     }
 
@@ -111,8 +176,8 @@ public class MainActivity extends AppCompatActivity {
                     View viewToEdit = viewToFind;
 
                     // Update the params of the entry
-                    ((TextView)viewToEdit.findViewById(R.id.channelIdTag)).setText(returnedChannel.getChannelID());
-                    ((TextView)viewToEdit.findViewById(R.id.labelChannelName)).setText(returnedChannel.getChannelName());
+                    ((TextView) viewToEdit.findViewById(R.id.channelIdTag)).setText(returnedChannel.getChannelID());
+                    ((TextView) viewToEdit.findViewById(R.id.labelChannelName)).setText(returnedChannel.getChannelName());
 
                     // Update the profile pic
                     ImageView profilePic = viewToEdit.findViewById(R.id.imgChannelPic);
@@ -132,24 +197,23 @@ public class MainActivity extends AppCompatActivity {
                     viewToEdit.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
                         // Show a confirmation dialogue
                         AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
-                        confirmBuilder.setTitle("Delete " + returnedChannel.getChannelName() +"?");
+                        confirmBuilder.setTitle("Delete " + returnedChannel.getChannelName() + "?");
                         confirmBuilder.setMessage("Are you sure you want to stop receiving notifications from " + returnedChannel.getChannelName() + "?");
                         confirmBuilder.setCancelable(true);
                         confirmBuilder.setPositiveButton("Yes", (dialogInterface, i) -> {
                             // Now delete the entry
-                            ((LinearLayout)viewToEdit.getParent()).removeView(viewToEdit);
+                            ((LinearLayout) viewToEdit.getParent()).removeView(viewToEdit);
                             if (deleteChannelData(returnedChannel.getChannelID()))
                                 showErrorMessage(returnedChannel.getChannelName() + " deleted");
 
-                                System.out.println("About to remove");
-                                // Re-add the "no channel" message if there are no entries left
-                                if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
-                                    // There are none left
-                                    System.out.println("none left");
-                                    View noChannelBox = findViewById(R.id.boxNoChannels);
-                                    if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
-                                }
-                            else
+                            System.out.println("About to remove");
+                            // Re-add the "no channel" message if there are no entries left
+                            if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
+                                // There are none left
+                                System.out.println("none left");
+                                View noChannelBox = findViewById(R.id.boxNoChannels);
+                                if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
+                            } else
                                 showErrorMessage("Entry" + returnedChannel.getChannelName() + " could not be deleted!");
                         });
                         confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
@@ -165,7 +229,8 @@ public class MainActivity extends AppCompatActivity {
                         // Delete the old entry
                         deleteChannelData(entryToEdit);
                     }
-                    if (!saveAndFetchChannelData(returnedChannel)) showErrorMessage("Could not write channel to filesystem. Please report this error.");
+                    if (!saveAndFetchChannelData(returnedChannel))
+                        showErrorMessage("Could not write channel to filesystem. Please report this error.");
                 } else if (resultCode == 0) {
                     // User cancelled it. Do nothing
                     System.out.println("User cancelled the edit");
@@ -221,23 +286,22 @@ public class MainActivity extends AppCompatActivity {
         entryToAdd.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
             // Show a confirmation dialogue
             AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
-            confirmBuilder.setTitle("Delete " + channel.getChannelName() +"?");
+            confirmBuilder.setTitle("Delete " + channel.getChannelName() + "?");
             confirmBuilder.setMessage("Are you sure you want to stop receiving notifications from " + channel.getChannelName() + "?");
             confirmBuilder.setCancelable(true);
             confirmBuilder.setPositiveButton("Yes", (dialogInterface, i) -> {
                 // Now delete the entry
-                ((LinearLayout)entryToAdd.getParent()).removeView(entryToAdd);
+                ((LinearLayout) entryToAdd.getParent()).removeView(entryToAdd);
                 if (deleteChannelData(channel.getChannelID()))
                     showErrorMessage(channel.getChannelName() + " deleted");
 
-                    System.out.println("About to remove");
-                    // Re-add the "no channel" message if there are no entries left
-                    if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
-                        // There are none left
-                        System.out.println("none left");
-                        if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
-                    }
-                else
+                System.out.println("About to remove");
+                // Re-add the "no channel" message if there are no entries left
+                if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
+                    // There are none left
+                    System.out.println("none left");
+                    if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
+                } else
                     showErrorMessage("Entry" + channel.getChannelName() + " could not be deleted!");
             });
             confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
@@ -300,14 +364,15 @@ public class MainActivity extends AppCompatActivity {
                 text.append('\n');
             }
             br.close();
-        } catch (IOException e) { return null; }
+        } catch (IOException e) {
+            return null;
+        }
 
         return text.toString();
     }
 
     private boolean saveAndFetchChannelData(Channel channel) {
-        try
-        {
+        try {
             // Create the file's directories
             File dir = new File(this.getFilesDir() + File.separator + channel.getChannelID());
             if (!dir.exists()) {
@@ -325,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
             // Create the image
             Drawable pfp = getDrawableFromURL(channel.getPictureURL());
             Drawable resizedPfp = resizeDrawable(pfp);
-            Bitmap imageToWrite = ((BitmapDrawable)resizedPfp).getBitmap();
+            Bitmap imageToWrite = ((BitmapDrawable) resizedPfp).getBitmap();
             File imageFile = new File(dir, channel.getChannelID() + ".png");
             outStream = new FileOutputStream(imageFile);
             imageToWrite.compress(Bitmap.CompressFormat.PNG, 100, outStream);
@@ -335,13 +400,15 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         // If there are any errors, return false
-        catch (IOException e) { return false; }
+        catch (IOException e) {
+            return false;
+        }
     }
 
     private void showErrorMessage(String msg) {
         int length = Toast.LENGTH_LONG;
         if (msg.length() <= 30) length = Toast.LENGTH_SHORT;
-        Toast.makeText(getApplicationContext(),msg, length).show();
+        Toast.makeText(getApplicationContext(), msg, length).show();
     }
 
     /**
@@ -360,9 +427,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private Drawable resizeDrawable(Drawable image) {
-        Bitmap b = ((BitmapDrawable)image).getBitmap();
+        Bitmap b = getRoundedCroppedBitmap(((BitmapDrawable) image).getBitmap());
         Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 128, 128, false);
         return new BitmapDrawable(getResources(), bitmapResized);
+    }
+
+    private Bitmap getRoundedCroppedBitmap(Bitmap bitmap) {
+        int widthLight = bitmap.getWidth();
+        int heightLight = bitmap.getHeight();
+
+        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(),
+                Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(output);
+        Paint paintColor = new Paint();
+        paintColor.setFlags(Paint.ANTI_ALIAS_FLAG);
+
+        RectF rectF = new RectF(new Rect(0, 0, widthLight, heightLight));
+
+        canvas.drawRoundRect(rectF, widthLight / 2, heightLight / 2, paintColor);
+
+        Paint paintImage = new Paint();
+        paintImage.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
+        canvas.drawBitmap(bitmap, 0, 0, paintImage);
+
+        return output;
     }
 
 }

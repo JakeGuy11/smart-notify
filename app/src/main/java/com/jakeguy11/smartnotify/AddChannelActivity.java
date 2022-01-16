@@ -31,15 +31,16 @@ public class AddChannelActivity extends AppCompatActivity {
 
         // Configure the action bar
         ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) actionBar.setTitle("Add a Channel");
 
         // Create the channel we'll return
         Channel startingChannel = (Channel) getIntent().getSerializableExtra("channel_to_edit");
         // If there is no starting channel, create a new one. If there is, populate the form with its data.
-        if (startingChannel == null)
+        if (startingChannel == null) {
             startingChannel = new Channel();
-        else {
+            if (actionBar != null) actionBar.setTitle("Add a Channel");
+        } else {
             populateForm(startingChannel);
+            if (actionBar != null) actionBar.setTitle("Edit a Channel");
 
             // Change the button text
             ((Button) findViewById(R.id.btnSaveChannel)).setText("Update");
