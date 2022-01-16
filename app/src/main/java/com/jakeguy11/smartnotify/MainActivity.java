@@ -3,47 +3,21 @@ package com.jakeguy11.smartnotify;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.NotificationCompat;
 
 import android.app.AlarmManager;
-import android.app.Notification;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.Paint;
-import android.graphics.PorterDuff;
-import android.graphics.PorterDuffXfermode;
-import android.graphics.Rect;
-import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
-import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileFilter;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
@@ -66,61 +40,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         // Get all the data saved and add them to the view
-        Channel tempChannel = null;
-        for (File file : getAllJSONs()) {
-            Channel channelToAdd = Channel.fromJSON(getFileString(file));
+        for (File file : GenericTools.getAllJSONs(this)) {
+            Channel channelToAdd = Channel.fromJSON(GenericTools.getFileString(file));
             addChannelToView(channelToAdd);
-            tempChannel = new Channel(channelToAdd);
         }
-
-        System.out.println("sending notif");
-
-        showNotification(tempChannel, "This is the video title", true);
-
-        System.out.println("sent");
 
         // Start the periodic service
         Intent periodicIntent = new Intent(this, NotificationChecker.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        // manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
-    }
-
-    private void showNotification(Channel channel, String videoTitle, boolean isUpload) {
-        if(channel == null) return;
-
-        // Start by generating our params for the notification
-        String title = "";
-        if (isUpload) title = channel.getChannelName() + " has uploaded a video";
-        else title = channel.getChannelName() + " is live!";
-
-        // Get the PFP as a bitmap
-        File imageFile = new File(this.getFilesDir() + File.separator + channel.getChannelID() + File.separator + channel.getChannelID() + ".png");
-        Bitmap icon = BitmapFactory.decodeFile(imageFile.getPath());
-
-        // Create our notification manager
-        NotificationManager mNotificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(MainActivity.this, "default");
-
-        // Set the notification params
-        mBuilder.setContentTitle(title);
-        mBuilder.setContentText(videoTitle);
-        mBuilder.setLargeIcon(icon);
-        mBuilder.setSmallIcon(R.drawable.heart_checked);
-        mBuilder.setAutoCancel(true);
-
-        // Do some mandatory android stuff
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel notificationChannel = new NotificationChannel("10001", "NOTIFICATION_CHANNEL_NAME", importance);
-            mBuilder.setChannelId("10001");
-            assert mNotificationManager != null;
-            mNotificationManager.createNotificationChannel(notificationChannel);
-        }
-        assert mNotificationManager != null;
-
-        // Send the notification
-        mNotificationManager.notify((int) System.currentTimeMillis(), mBuilder.build());
+        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
     }
 
     /**
@@ -140,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
                     System.out.println("Channel returned\n\n" + returnedChannel);
 
                     // Save the channel
-                    if (!saveAndFetchChannelData(returnedChannel))
-                        showErrorMessage("Could not write channel to filesystem. Please report this error.");
+                    if (!GenericTools.saveAndFetchChannelData(this, returnedChannel))
+                        GenericTools.showErrorMessage(this, "Could not write channel to filesystem. Please report this error.");
                     // Add the channel to the view
                     addChannelToView(returnedChannel);
                 } else if (resultCode == 0) {
@@ -181,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // Update the profile pic
                     ImageView profilePic = viewToEdit.findViewById(R.id.imgChannelPic);
-                    profilePic.setImageDrawable(getDrawableFromURL(returnedChannel.getPictureURL()));
+                    profilePic.setImageDrawable(GenericTools.getDrawableFromURL(returnedChannel.getPictureURL()));
                     profilePic.setLayoutParams(new LinearLayout.LayoutParams(128, 128));
 
                     // Update the edit listener
@@ -204,7 +133,9 @@ public class MainActivity extends AppCompatActivity {
                             // Now delete the entry
                             ((LinearLayout) viewToEdit.getParent()).removeView(viewToEdit);
                             if (deleteChannelData(returnedChannel.getChannelID()))
-                                showErrorMessage(returnedChannel.getChannelName() + " deleted");
+                                GenericTools.showErrorMessage(this, returnedChannel.getChannelName() + " deleted");
+                            else
+                                GenericTools.showErrorMessage(this, "Entry " + returnedChannel.getChannelName() + " could not be deleted!");
 
                             System.out.println("About to remove");
                             // Re-add the "no channel" message if there are no entries left
@@ -213,8 +144,7 @@ public class MainActivity extends AppCompatActivity {
                                 System.out.println("none left");
                                 View noChannelBox = findViewById(R.id.boxNoChannels);
                                 if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
-                            } else
-                                showErrorMessage("Entry" + returnedChannel.getChannelName() + " could not be deleted!");
+                            }
                         });
                         confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
                             // User cancelled it
@@ -229,8 +159,8 @@ public class MainActivity extends AppCompatActivity {
                         // Delete the old entry
                         deleteChannelData(entryToEdit);
                     }
-                    if (!saveAndFetchChannelData(returnedChannel))
-                        showErrorMessage("Could not write channel to filesystem. Please report this error.");
+                    if (!GenericTools.saveAndFetchChannelData(this, returnedChannel))
+                        GenericTools.showErrorMessage(this, "Could not write channel to filesystem. Please report this error.");
                 } else if (resultCode == 0) {
                     // User cancelled it. Do nothing
                     System.out.println("User cancelled the edit");
@@ -293,7 +223,9 @@ public class MainActivity extends AppCompatActivity {
                 // Now delete the entry
                 ((LinearLayout) entryToAdd.getParent()).removeView(entryToAdd);
                 if (deleteChannelData(channel.getChannelID()))
-                    showErrorMessage(channel.getChannelName() + " deleted");
+                    GenericTools.showErrorMessage(this, channel.getChannelName() + " deleted");
+                else
+                    GenericTools.showErrorMessage(this, "Entry " + channel.getChannelName() + " could not be deleted!");
 
                 System.out.println("About to remove");
                 // Re-add the "no channel" message if there are no entries left
@@ -301,8 +233,7 @@ public class MainActivity extends AppCompatActivity {
                     // There are none left
                     System.out.println("none left");
                     if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
-                } else
-                    showErrorMessage("Entry" + channel.getChannelName() + " could not be deleted!");
+                }
             });
             confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
                 // User cancelled it
@@ -338,120 +269,5 @@ public class MainActivity extends AppCompatActivity {
         return idsList.toArray(new String[0]);
     }
 
-    private File[] getAllJSONs() {
-        File dir = getFilesDir();
-        List<File> jsonFiles = new ArrayList<>();
-        for (File currentDir : dir.listFiles()) {
-            File[] jsonFilesFromCurrentDir = currentDir.listFiles(new FileFilter() {
-                @Override
-                public boolean accept(File file) {
-                    return file.getName().contains(".json");
-                }
-            });
-            jsonFiles.addAll(Arrays.asList(jsonFilesFromCurrentDir));
-        }
-        return jsonFiles.toArray(new File[0]);
-    }
-
-    private String getFileString(File file) {
-        StringBuilder text = new StringBuilder();
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            String line;
-
-            while ((line = br.readLine()) != null) {
-                text.append(line);
-                text.append('\n');
-            }
-            br.close();
-        } catch (IOException e) {
-            return null;
-        }
-
-        return text.toString();
-    }
-
-    private boolean saveAndFetchChannelData(Channel channel) {
-        try {
-            // Create the file's directories
-            File dir = new File(this.getFilesDir() + File.separator + channel.getChannelID());
-            if (!dir.exists()) {
-                // Folder doesn't exist - create it
-                dir.mkdir();
-            }
-
-            // Create the JSON
-            File jsonFile = new File(dir, channel.getChannelID() + ".json");
-            FileOutputStream outStream = new FileOutputStream(jsonFile);
-            OutputStreamWriter outStreamWriter = new OutputStreamWriter(outStream);
-            outStreamWriter.write(channel.toString());
-            outStreamWriter.close();
-
-            // Create the image
-            Drawable pfp = getDrawableFromURL(channel.getPictureURL());
-            Drawable resizedPfp = resizeDrawable(pfp);
-            Bitmap imageToWrite = ((BitmapDrawable) resizedPfp).getBitmap();
-            File imageFile = new File(dir, channel.getChannelID() + ".png");
-            outStream = new FileOutputStream(imageFile);
-            imageToWrite.compress(Bitmap.CompressFormat.PNG, 100, outStream);
-            outStream.flush();
-            outStream.close();
-
-            return true;
-        }
-        // If there are any errors, return false
-        catch (IOException e) {
-            return false;
-        }
-    }
-
-    private void showErrorMessage(String msg) {
-        int length = Toast.LENGTH_LONG;
-        if (msg.length() <= 30) length = Toast.LENGTH_SHORT;
-        Toast.makeText(getApplicationContext(), msg, length).show();
-    }
-
-    /**
-     * Turn an Image URL into a Drawable.
-     *
-     * @param url the URL of the image.
-     * @return the Drawable containing the image.
-     */
-    private Drawable getDrawableFromURL(String url) {
-        try {
-            InputStream urlStream = (InputStream) new URL(url).getContent();
-            return Drawable.createFromStream(urlStream, null);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private Drawable resizeDrawable(Drawable image) {
-        Bitmap b = getRoundedCroppedBitmap(((BitmapDrawable) image).getBitmap());
-        Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 128, 128, false);
-        return new BitmapDrawable(getResources(), bitmapResized);
-    }
-
-    private Bitmap getRoundedCroppedBitmap(Bitmap bitmap) {
-        int widthLight = bitmap.getWidth();
-        int heightLight = bitmap.getHeight();
-
-        Bitmap output = Bitmap.createBitmap(bitmap.getWidth(), bitmap.getHeight(),
-                Bitmap.Config.ARGB_8888);
-
-        Canvas canvas = new Canvas(output);
-        Paint paintColor = new Paint();
-        paintColor.setFlags(Paint.ANTI_ALIAS_FLAG);
-
-        RectF rectF = new RectF(new Rect(0, 0, widthLight, heightLight));
-
-        canvas.drawRoundRect(rectF, widthLight / 2, heightLight / 2, paintColor);
-
-        Paint paintImage = new Paint();
-        paintImage.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC_ATOP));
-        canvas.drawBitmap(bitmap, 0, 0, paintImage);
-
-        return output;
-    }
 
 }
