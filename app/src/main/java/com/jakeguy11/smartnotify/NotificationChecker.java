@@ -2,8 +2,6 @@ package com.jakeguy11.smartnotify;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
 
-import androidx.core.app.NotificationCompat;
-
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
@@ -12,18 +10,47 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
+import androidx.core.app.NotificationCompat;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.File;
-import java.io.FileFilter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class NotificationChecker extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        for (File file : getAllJSONs(context)) {
-            Channel channelToAdd = Channel.fromJSON(getFileString(file));
+        for (File file : GenericTools.getAllJSONs(context)) {
+            // First, get the current channel
+            Channel currentChannel = Channel.fromJSON(GenericTools.getFileString(file));
+
+            // Get the RSS feed
+            String rssUrl = currentChannel.getRSSURL();
+            JSONObject rssJson = GenericTools.convertXMLtoJSON(GenericTools.getUrlContent(rssUrl));
+
+            try {
+                // If the channel's new, initialize it with the latest upload
+                if (!currentChannel.isInitialized()) {
+                    JSONObject newestVideo = rssJson.getJSONObject("feed")
+                            .getJSONArray("entry")
+                            .getJSONObject(0);
+                    String newestID = newestVideo.getJSONObject("videoId").getString("__text");
+                    currentChannel.initialize(newestID);
+                } else {
+                    // The channel's not new - everything after the newest ID saved to the channel must be notified
+                    JSONArray entries = rssJson.getJSONObject("feed").getJSONArray("entry");
+                    for (int i = entries.length() - 1; i >= 0; i--) {
+                        // Until we find the video id of getLatestUploadID(), do nothing
+                        // Once we do, everything after that will be new, and therefore
+                        // merit sending a notification. Send the JSONObject of the entry
+                        // to another method that will parse it, along with the channel,
+                        // and send our notification :)
+                    }
+                }
+            } catch (Exception e) {
+                System.out.println("Could not parse json for channel " + currentChannel.getChannelName());
+            }
         }
     }
 

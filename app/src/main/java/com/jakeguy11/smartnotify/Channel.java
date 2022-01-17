@@ -22,25 +22,19 @@ import java.util.Objects;
 
 public class Channel implements Serializable {
 
+    public String latestUploadID;
     private String channelName;
     private String channelID;
     private boolean notifyUploads;
     private boolean notifyStreams;
     private boolean filterUploads;
     private boolean filterStreams;
+    private boolean initialized;
     private List<String> uploadKeywords = new ArrayList<>();
     private List<String> streamKeywords = new ArrayList<>();
     private String pictureURL;
     private String readableID;
     private ChannelType channelType;
-    public String latestUploadID;
-    public boolean notifiedLive;
-
-    private enum ChannelType {
-        CHANNEL,
-        C,
-        USER
-    }
 
     /**
      * Create an empty Channel object.
@@ -63,13 +57,59 @@ public class Channel implements Serializable {
         this.notifyStreams = channelToClone.notifyStreams;
         this.filterUploads = channelToClone.filterUploads;
         this.filterStreams = channelToClone.filterStreams;
+        this.initialized = channelToClone.initialized;
         this.uploadKeywords = channelToClone.getUploadKeywords();
         this.streamKeywords = channelToClone.getStreamKeywords();
         this.pictureURL = channelToClone.pictureURL;
         this.readableID = channelToClone.readableID;
         this.channelType = channelToClone.channelType;
         this.latestUploadID = channelToClone.latestUploadID;
-        this.notifiedLive = channelToClone.notifiedLive;
+    }
+
+    /**
+     * Convert a JSON string to an actual Channel object.
+     *
+     * @param jsonData The JSON string to parse.
+     * @return The filled in Channel object.
+     */
+    public static Channel fromJSON(String jsonData) {
+        // Parse the JSON, return it
+        Gson jsonParser = new Gson();
+        return jsonParser.fromJson(jsonData, Channel.class);
+    }
+
+    /**
+     * Parse a string in order to get just the channel ID. A URL or plain ID can be passed in.
+     *
+     * @param identifier The URL *or* channel ID.
+     * @return just the channel ID.
+     */
+    private static String parseChannelIdentifier(String identifier) {
+        if (identifier == null) return null;
+
+        // Check if the input string contains a '/' - if it does, it's likely a URL
+        if (identifier.contains("/")) {
+            String[] splitURL = identifier.split("/");
+            String foundID = null;
+
+            // Youtube URLs are always either youtube.com/c/ChannelID or youtube.com/user/ChannelID,
+            // but they may have some arguments after them (ie. /videos/), but since the ID always
+            // comes after /user/ or /c/, we can parse the URL for that
+            for (int i = 0; i < splitURL.length; i++)
+                if (splitURL[i].equals("c") || splitURL[i].equals("channel") || splitURL[i].equals("user"))
+                    foundID = splitURL[i + 1];
+
+            return foundID;
+        } else return identifier;
+    }
+
+    /**
+     * Get the name assigned to this channel.
+     *
+     * @return the name of the channel.
+     */
+    public String getChannelName() {
+        return this.channelName;
     }
 
     /**
@@ -81,15 +121,6 @@ public class Channel implements Serializable {
         if (newName == null) return;
 
         this.channelName = newName;
-    }
-
-    /**
-     * Get the name assigned to this channel.
-     *
-     * @return the name of the channel.
-     */
-    public String getChannelName() {
-        return this.channelName;
     }
 
     /**
@@ -108,11 +139,7 @@ public class Channel implements Serializable {
 
         // Set the channel ID from the readable ID
         this.channelID = getTrueId(this.readableID);
-        if (this.channelID != null) {
-            return true;
-        } else {
-            return false;
-        }
+        return this.channelID != null;
     }
 
     public String getRSSURL() {
@@ -139,15 +166,6 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Set whether or not to send a notification for new uploads.
-     *
-     * @param notify Whether or not to notify the user on uploads.
-     */
-    public void setNotifyUploads(boolean notify) {
-        this.notifyUploads = notify;
-    }
-
-    /**
      * Check whether or not to send a notification for new uploads.
      *
      * @return whether or not to notify on uploads.
@@ -157,12 +175,12 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Set whether or not to filter new uploads.
+     * Set whether or not to send a notification for new uploads.
      *
-     * @param filter Whether or not to filter upload notifications.
+     * @param notify Whether or not to notify the user on uploads.
      */
-    public void setFilterUploads(boolean filter) {
-        this.filterUploads = filter;
+    public void setNotifyUploads(boolean notify) {
+        this.notifyUploads = notify;
     }
 
     /**
@@ -175,12 +193,12 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Set whether or not to send a notification for livestreams.
+     * Set whether or not to filter new uploads.
      *
-     * @param notify Whether or not to notify the user on livestreams.
+     * @param filter Whether or not to filter upload notifications.
      */
-    public void setNotifyStreams(boolean notify) {
-        this.notifyStreams = notify;
+    public void setFilterUploads(boolean filter) {
+        this.filterUploads = filter;
     }
 
     /**
@@ -193,12 +211,12 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Set whether or not to filter livestreams.
+     * Set whether or not to send a notification for livestreams.
      *
-     * @param filter Whether or not to filter livestreams.
+     * @param notify Whether or not to notify the user on livestreams.
      */
-    public void setFilterStreams(boolean filter) {
-        this.filterStreams = filter;
+    public void setNotifyStreams(boolean notify) {
+        this.notifyStreams = notify;
     }
 
     /**
@@ -208,6 +226,15 @@ public class Channel implements Serializable {
      */
     public boolean getFilterStreams() {
         return this.filterStreams;
+    }
+
+    /**
+     * Set whether or not to filter livestreams.
+     *
+     * @param filter Whether or not to filter livestreams.
+     */
+    public void setFilterStreams(boolean filter) {
+        this.filterStreams = filter;
     }
 
     /**
@@ -281,7 +308,7 @@ public class Channel implements Serializable {
         String trueURL = site.getElementsByAttributeValue("rel", "canonical").get(1).attr("href");
         String[] splitURL = trueURL.split("/");
         this.channelType = ChannelType.CHANNEL;
-        return splitURL[splitURL.length-1];
+        return splitURL[splitURL.length - 1];
     }
 
     /**
@@ -371,40 +398,29 @@ public class Channel implements Serializable {
     }
 
     /**
-     * Convert a JSON string to an actual Channel object.
-     *
-     * @param jsonData The JSON string to parse.
-     * @return The filled in Channel object.
+     * Mark the channel as initialized.
      */
-    public static Channel fromJSON(String jsonData) {
-        // Parse the JSON, return it
-        Gson jsonParser = new Gson();
-        return jsonParser.fromJson(jsonData, Channel.class);
+    public void initialize(String videoID) {
+        this.latestUploadID = videoID;
+        this.initialized = true;
     }
 
     /**
-     * Parse a string in order to get just the channel ID. A URL or plain ID can be passed in.
+     * Check whether or not the channel's been initialized.
      *
-     * @param identifier The URL *or* channel ID.
-     * @return just the channel ID.
+     * @return whether or not the channel's been initialized.
      */
-    private static String parseChannelIdentifier(String identifier) {
-        if (identifier == null) return null;
+    public boolean isInitialized() {
+        return this.initialized;
+    }
 
-        // Check if the input string contains a '/' - if it does, it's likely a URL
-        if (identifier.contains("/")) {
-            String[] splitURL = identifier.split("/");
-            String foundID = null;
-
-            // Youtube URLs are always either youtube.com/c/ChannelID or youtube.com/user/ChannelID,
-            // but they may have some arguments after them (ie. /videos/), but since the ID always
-            // comes after /user/ or /c/, we can parse the URL for that
-            for (int i = 0; i < splitURL.length; i++)
-                if (splitURL[i].equals("c") || splitURL[i].equals("channel") || splitURL[i].equals("user"))
-                    foundID = splitURL[i + 1];
-
-            return foundID;
-        } else return identifier;
+    /**
+     * Check what the latest upload ID is.
+     *
+     * @return the latest video ID.
+     */
+    public String getLatestUploadID() {
+        return this.latestUploadID;
     }
 
     /**
@@ -416,6 +432,12 @@ public class Channel implements Serializable {
     public String toString() {
         Gson gsonMaker = new Gson();
         return gsonMaker.toJson(this);
+    }
+
+    private enum ChannelType {
+        CHANNEL,
+        C,
+        USER
     }
 
 }

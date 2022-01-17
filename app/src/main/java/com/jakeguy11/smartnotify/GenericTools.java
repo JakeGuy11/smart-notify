@@ -10,7 +10,10 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.StrictMode;
 import android.widget.Toast;
+
+import org.json.*;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -19,13 +22,23 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class GenericTools {
+
+    public static JSONObject convertXMLtoJSON(String xmlContent) {
+        try {
+            return XML.toJSONObject(xmlContent);
+        } catch (JSONException e) {
+            return null;
+        }
+    }
 
     public static File[] getAllJSONs(Context context) {
         File dir = context.getFilesDir();
@@ -95,6 +108,26 @@ public class GenericTools {
         canvas.drawBitmap(bitmap, 0, 0, paintImage);
 
         return output;
+    }
+
+    public static String getUrlContent(String urlString) {
+        try {
+            StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
+
+            URL url = new URL(urlString);
+            URLConnection con = url.openConnection();
+
+            BufferedReader reader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+
+            String line;
+            StringBuilder content = new StringBuilder();
+            while ((line = reader.readLine()) != null)
+                content.append(line).append("\n");
+
+            return content.toString();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static Drawable resizeDrawable(Context context, Drawable image) {
