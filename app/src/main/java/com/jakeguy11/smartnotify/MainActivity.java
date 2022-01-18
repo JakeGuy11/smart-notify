@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         Intent periodicIntent = new Intent(this, NotificationChecker.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 2000, 60000, pendingIntent);
     }
 
     /**
@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity {
                 if (resultCode == 1) {
                     // Everything went well, add it to the view
                     Channel returnedChannel = Channel.fromJSON(returnedData.getDataString());
-                    System.out.println("Channel returned\n\n" + returnedChannel);
+                    System.out.println("Channel returned\n" + returnedChannel);
 
                     // Save the channel
                     if (!GenericTools.saveAndFetchChannelData(this, returnedChannel))

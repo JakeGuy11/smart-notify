@@ -406,6 +406,14 @@ public class Channel implements Serializable {
     }
 
     /**
+     * Update the latest video ID that the user has been notified of.
+     * @param videoID The latest video id.
+     */
+    public void updateLatestVideo(String videoID) {
+        this.latestUploadID = videoID;
+    }
+
+    /**
      * Check whether or not the channel's been initialized.
      *
      * @return whether or not the channel's been initialized.
@@ -434,6 +442,17 @@ public class Channel implements Serializable {
         return gsonMaker.toJson(this);
     }
 
+    /**
+     * Invalidate the latest video ID. Could be used if the latest video was deleted to prevent never finding a new video.
+     */
+    public void invalidateActivity() {
+        this.initialized = false;
+        this.latestUploadID = "fake id";
+    }
+
+    /**
+     * The type of channel the user has added. USER feeds are handled differently from CHANNEL feeds, and C feeds must be parsed down into a CHANNEL feed.
+     */
     private enum ChannelType {
         CHANNEL,
         C,
