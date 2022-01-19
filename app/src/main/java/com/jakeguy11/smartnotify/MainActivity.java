@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         Intent periodicIntent = new Intent(this, NotificationChecker.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
         AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 2000, 60000, pendingIntent);
+        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 60000, pendingIntent);
     }
 
     /**

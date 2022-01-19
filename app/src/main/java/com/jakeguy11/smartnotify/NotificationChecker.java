@@ -20,10 +20,27 @@ import java.io.File;
 
 public class NotificationChecker extends BroadcastReceiver {
 
+    private long previousMillis;
+
     @Override
     public void onReceive(Context context, Intent intent) {
-        showBlankNotif(context);
-        for (File file : GenericTools.getAllJSONs(context)) {
+
+        if (this.previousMillis == 0) {
+            this.previousMillis = System.currentTimeMillis();
+            System.out.println("First loop, no elapsed millis");
+        } else {
+            long elapsedMillis = System.currentTimeMillis() - this.previousMillis;
+            System.out.println(elapsedMillis + " millis elapsed (" + (int) (elapsedMillis /1000) + " seconds)");
+            this.previousMillis = System.currentTimeMillis();
+        }
+
+        // showBlankNotif(context);
+        System.out.println("In periodic loop :)");
+        File[] filesToCheck = GenericTools.getAllJSONs(context);
+        for (File f : filesToCheck)
+            System.out.println(f.getName());
+
+        for (File file : filesToCheck) {
             // First, get the current channel
             Channel currentChannel = Channel.fromJSON(GenericTools.getFileString(file));
             System.out.println("Checking channel " + currentChannel.getChannelName());
