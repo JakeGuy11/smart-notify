@@ -62,6 +62,9 @@ public class Logger {
      * @param lv The level to log it with.
      */
     public void log(String msg, LogLevel lv) {
+        // Make sure we're valid
+        if (!this.valid) return;
+
         // First, get the date/time to log with
         String timeStamp = getDateTime();
         String logLine = timeStamp + " [" + this.className + "] " + lv + ": " + msg;
@@ -76,6 +79,9 @@ public class Logger {
      * @param msg The message to log.
      */
     public void log(String msg) {
+        // Make sure we're valid
+        if (!this.valid) return;
+
         // First, get the date/time to log with
         String timeStamp = getDateTime();
         String logLine = timeStamp + " [" + this.className + "] " + LogLevel.INFO + ": " + msg;
@@ -85,9 +91,24 @@ public class Logger {
     }
 
     /**
+     * Print an empty line for spacing purposes.
+     */
+    public void space() {
+        // Make sure we're valid
+        if (!this.valid) return;
+
+        // Print a new line
+        this.printer.println();
+    }
+
+    /**
      * Write the contents of the printer to the file.
      */
     public void write() {
+        // Make sure we're valid
+        if (!this.valid) return;
+
+        // Flush the writer
         this.printer.flush();
     }
 

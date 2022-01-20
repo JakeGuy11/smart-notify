@@ -20,31 +20,29 @@ import java.io.File;
 
 public class NotificationChecker extends BroadcastReceiver {
 
-    private long previousMillis;
+    Logger logger;
 
     @Override
     public void onReceive(Context context, Intent intent) {
 
-        if (this.previousMillis == 0) {
-            this.previousMillis = System.currentTimeMillis();
-            System.out.println("First loop, no elapsed millis");
-        } else {
-            long elapsedMillis = System.currentTimeMillis() - this.previousMillis;
-            System.out.println(elapsedMillis + " millis elapsed (" + (int) (elapsedMillis /1000) + " seconds)");
-            this.previousMillis = System.currentTimeMillis();
-        }
+        String loggerFile = intent.getStringExtra("logger_name");
+        logger = new Logger(loggerFile, this.getClass().getSimpleName(), context);
 
-        // showBlankNotif(context);
-        System.out.println("In periodic loop :)");
+        logger.space();
+        logger.space();
+        logger.log("Starting channel checks...", Logger.LogLevel.INFO);
+
+        // Get all the JSONs
         File[] filesToCheck = GenericTools.getAllJSONs(context);
         for (File f : filesToCheck)
-            System.out.println(f.getName());
+            logger.log("Found file " + f.getName(), Logger.LogLevel.VERBOSE);
 
+        // Go through each file
         for (File file : filesToCheck) {
+            logger.space();
             // First, get the current channel
             Channel currentChannel = Channel.fromJSON(GenericTools.getFileString(file));
-            System.out.println("Checking channel " + currentChannel.getChannelName());
-            System.out.println("Latest channel ID is " + currentChannel.getLatestUploadID());
+            logger.log("Checking file " + currentChannel.getChannelName() + " with latest video ID " + currentChannel.getLatestUploadID(), Logger.LogLevel.INFO);
 
             // Get the RSS feed
             String rssUrl = currentChannel.getRSSURL();
@@ -58,27 +56,21 @@ public class NotificationChecker extends BroadcastReceiver {
                 if (!currentChannel.isInitialized()) {
                     String idToInit = getVideoInfo(entries, 1)[0];
                     currentChannel.initialize(idToInit);
-                    System.out.println("Initialized with id " + idToInit);
+                    logger.log("Channel was not initialized. Initializing with ID " + idToInit, Logger.LogLevel.VERBOSE);
                 } else {
                     // The channel's not new - everything after the newest ID saved to the channel must be notified
                     boolean foundLatestUpdateId = false;
                     for (int i = entries.length() - 1; i >= 0; i--) {
-                        // Until we find the video id of getLatestUploadID(), do nothing
-                        // Once we do, everything after that will be new, and therefore
-                        // merit sending a notification. Send the JSONObject of the entry
-                        // to another method that will parse it, along with the channel,
-                        // and send our notification :)
-
                         // Get the data about the current entry
                         String[] videoInfo = getVideoInfo(entries, i);
                         String videoID = videoInfo[0];
                         String videoTitle = videoInfo[1];
 
-                        System.out.println("Checking video " + videoID);
+                        logger.log("Found video \"" + videoTitle + "\" with ID " + videoID, Logger.LogLevel.VERBOSE);
 
                         // Check if the ID has been found yet
                         if (foundLatestUpdateId) {
-                            System.out.println("New video at id " + videoID);
+                            logger.log("Found new video \"" + videoTitle + "\" with ID " + videoID + " at element " + i, Logger.LogLevel.INFO);
                             // This is a new video - check if it's live
                             // Depending on the answer, send the notification
                             String videoUrl = "https://www.youtube.com/watch?v=" + videoID;
@@ -86,7 +78,7 @@ public class NotificationChecker extends BroadcastReceiver {
                             currentChannel.updateLatestVideo(videoID);
                         } else {
                             if (videoID.equals(currentChannel.getLatestUploadID())) {
-                                System.out.println("Found latest id at index " + i);
+                                logger.log("Found latest video at element " + i + " with ID " + videoID, Logger.LogLevel.VERBOSE);
                                 foundLatestUpdateId = true;
                             }
                         }
@@ -100,12 +92,18 @@ public class NotificationChecker extends BroadcastReceiver {
                 }
 
                 // Re-write the channel to the FS
+                logger.log("Saving channel to filesystem...", Logger.LogLevel.INFO);
                 GenericTools.saveAndFetchChannelData(context, currentChannel);
+                logger.log("Channel successfully saved to filesystem.", Logger.LogLevel.INFO);
 
             } catch (Exception e) {
-                System.out.println("Could not parse json for channel " + currentChannel.getChannelName());
+                logger.log("Failed to parse channel: " + e.getClass().getSimpleName(), Logger.LogLevel.ERROR);
             }
         }
+
+        logger.space();
+        logger.space();
+        logger.write();
     }
 
     private String[] getVideoInfo(JSONArray entries, int index) throws JSONException {
@@ -126,6 +124,9 @@ public class NotificationChecker extends BroadcastReceiver {
 
     private void showNotification(Context context, Channel channel, String videoTitle, String videoUrl, boolean isLivestream) {
         if (channel == null) return;
+
+        logger.space();
+        logger.log("Sending notification for channel " + channel.getChannelName() + " for video " + videoUrl, Logger.LogLevel.INFO);
 
         // Start by generating our params for the notification
         String title = "";
@@ -155,10 +156,15 @@ public class NotificationChecker extends BroadcastReceiver {
             assert mNotificationManager != null;
             mNotificationManager.createNotificationChannel(notificationChannel);
         }
-        assert mNotificationManager != null;
 
-        // Send the notification
-        mNotificationManager.notify((int) System.currentTimeMillis(), mBuilder.build());
+        try {
+            // Send the notification
+            mNotificationManager.notify((int) System.currentTimeMillis(), mBuilder.build());
+            logger.log("Sent notification for channel " + channel.getChannelName(), Logger.LogLevel.INFO);
+        } catch (Exception e) { logger.log("Failed to send notification: " + e.getClass().getSimpleName(), Logger.LogLevel.ERROR); }
+
+        logger.space();
+        logger.write();
     }
 
     private void showBlankNotif(Context context) {

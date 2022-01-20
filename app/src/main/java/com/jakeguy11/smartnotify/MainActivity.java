@@ -22,6 +22,8 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
+    Logger logger;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Set the main activity as the current view
@@ -30,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
 
         // Create the logger
         String loggerFileName = String.valueOf(System.currentTimeMillis());
-        Logger logger = new Logger(loggerFileName, this.getClass().getSimpleName(), getApplicationContext());
+        logger = new Logger(loggerFileName, this.getClass().getSimpleName(), getApplicationContext());
         logger.log("Starting logger...", Logger.LogLevel.INFO);
 
         // Configure the action bar
@@ -40,26 +42,39 @@ public class MainActivity extends AppCompatActivity {
             logger.log("Set action bar title to 'Home'", Logger.LogLevel.VERBOSE);
         } else logger.log("Failed to set action bar title", Logger.LogLevel.WARNING);
 
-        logger.write();
-
         // Add a listener for the Add button
         findViewById(R.id.btnAddChannel).setOnClickListener(view -> {
             Intent addChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
             addChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
             startActivityForResult(addChannelIntent, 738212183); // This code doesn't matter, it just needs to be unique
+
+            logger.log("Successfully Added listener for Add Channel button", Logger.LogLevel.INFO);
         });
 
         // Get all the data saved and add them to the view
         for (File file : GenericTools.getAllJSONs(this)) {
             Channel channelToAdd = Channel.fromJSON(GenericTools.getFileString(file));
             addChannelToView(channelToAdd);
+
+            logger.log("Added channel " + channelToAdd.getChannelName() + " to home page", Logger.LogLevel.INFO);
         }
 
-        // Start the periodic service
-        Intent periodicIntent = new Intent(this, NotificationChecker.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-        AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 60000, pendingIntent);
+        try {
+            // Start the periodic service
+            Intent periodicIntent = new Intent(this, NotificationChecker.class);
+            periodicIntent.putExtra("logger_name", loggerFileName);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+            AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
+            manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 60000, pendingIntent);
+            logger.log("Started AlarmManager for channel parser", Logger.LogLevel.INFO);
+        } catch (Exception e) {
+            logger.log("FAILED TO START PERIODIC PROCESS", Logger.LogLevel.FATAL);
+            logger.write();
+            android.os.Process.killProcess(android.os.Process.myPid());
+        }
+
+        logger.space();
+        logger.write();
     }
 
     /**
@@ -71,45 +86,58 @@ public class MainActivity extends AppCompatActivity {
      */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent returnedData) {
+        logger.space();
+        logger.log("Returned from activity with request code " + requestCode + " with result " + resultCode, Logger.LogLevel.INFO);
+
         switch (requestCode) {
             case 738212183: // Returning from adding a channel
                 if (resultCode == 1) {
                     // Everything went well, add it to the view
                     Channel returnedChannel = Channel.fromJSON(returnedData.getDataString());
-                    System.out.println("Channel returned\n" + returnedChannel);
+                    logger.log("Channel returned: " + returnedChannel, Logger.LogLevel.VERBOSE);
 
                     // Save the channel
-                    if (!GenericTools.saveAndFetchChannelData(this, returnedChannel))
+                    if (!GenericTools.saveAndFetchChannelData(this, returnedChannel)) {
                         GenericTools.showErrorMessage(this, "Could not write channel to filesystem. Please report this error.");
+                        logger.log("Failed to save channel.", Logger.LogLevel.ERROR);
+                    }
                     // Add the channel to the view
                     addChannelToView(returnedChannel);
-                } else if (resultCode == 0) {
-                    // User cancelled it. Do nothing, maybe add a message in the future
-                    System.out.println("User cancelled the addition");
-                } else {
+                } else if (resultCode == 0)
+                    // User cancelled it
+                    logger.log("User cancelled activity", Logger.LogLevel.INFO);
+                else
                     // Some other error - notify the user
-                    System.out.println("Something went terribly, terribly wrong. You should not be reading this.");
-                }
+                    logger.log("Unknown result returned from activity", Logger.LogLevel.WARNING);
                 break;
             case 6697101: // Returning from editing a channel
                 if (resultCode == 1) {
                     // Everything went well - edit the entry
                     Channel returnedChannel = Channel.fromJSON(returnedData.getDataString());
                     String entryToEdit = (String) returnedData.getSerializableExtra("entry_to_edit");
+                    logger.log("Updating channel " + returnedChannel.getChannelName(), Logger.LogLevel.INFO);
 
                     // Start by deleting the old data
                     deleteChannelData(entryToEdit);
+                    logger.log("Deleted old channel data", Logger.LogLevel.VERBOSE);
 
                     // Go through each entry to see if it's the one we want to edit
                     View viewToFind = null;
                     for (int i = 0; i < ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount(); i++) {
                         View currentView = ((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildAt(i);
 
-                        if (((TextView) currentView.findViewById(R.id.channelIdTag)).getText().equals(entryToEdit))
+                        if (((TextView) currentView.findViewById(R.id.channelIdTag)).getText().equals(entryToEdit)) {
                             viewToFind = currentView;
+                            logger.log("Found entry to edit", Logger.LogLevel.VERBOSE);
+                        }
                     }
 
-                    if (viewToFind == null) return; // Nothing to edit
+                    if (viewToFind == null) {
+                        logger.log("Could not find entry to edit", Logger.LogLevel.WARNING);
+                        logger.space();
+                        logger.write();
+                        return; // Nothing to edit
+                    }
 
                     // Copy it over, to make it effectively final
                     View viewToEdit = viewToFind;
@@ -129,23 +157,33 @@ public class MainActivity extends AppCompatActivity {
                         editChannelIntent.putExtra("entry_to_edit", returnedChannel.getChannelID());
                         editChannelIntent.putExtra("channel_to_edit", returnedChannel);
                         editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
+                        logger.log("Asking to edit channel " + returnedChannel.getChannelName(), Logger.LogLevel.INFO);
                         startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
                     });
 
+                    logger.log("Updated event listeners and entry params", Logger.LogLevel.INFO);
+
                     // Update the delete listener
                     viewToEdit.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
+                        logger.space();
+                        logger.log("Attempting to delete channel " + returnedChannel.getChannelName(), Logger.LogLevel.INFO);
                         // Show a confirmation dialogue
                         AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
                         confirmBuilder.setTitle("Delete " + returnedChannel.getChannelName() + "?");
                         confirmBuilder.setMessage("Are you sure you want to stop receiving notifications from " + returnedChannel.getChannelName() + "?");
                         confirmBuilder.setCancelable(true);
                         confirmBuilder.setPositiveButton("Yes", (dialogInterface, i) -> {
+                            logger.log("User confirmed deletion of channel " + returnedChannel.getChannelName(), Logger.LogLevel.INFO);
                             // Now delete the entry
                             ((LinearLayout) viewToEdit.getParent()).removeView(viewToEdit);
-                            if (deleteChannelData(returnedChannel.getChannelID()))
+                            if (deleteChannelData(returnedChannel.getChannelID())) {
                                 GenericTools.showErrorMessage(this, returnedChannel.getChannelName() + " deleted");
-                            else
+                                logger.log("Deleted channel " + returnedChannel.getChannelName());
+                            }
+                            else {
                                 GenericTools.showErrorMessage(this, "Entry " + returnedChannel.getChannelName() + " could not be deleted!");
+                                logger.log("Failed to delete channel " + returnedChannel.getChannelName(), Logger.LogLevel.ERROR);
+                            }
 
                             System.out.println("About to remove");
                             // Re-add the "no channel" message if there are no entries left
@@ -158,8 +196,11 @@ public class MainActivity extends AppCompatActivity {
                         });
                         confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
                             // User cancelled it
-                            System.out.println("Entry not deleted");
+                            logger.log("User cancelled deletion of channel " + returnedChannel.getChannelName(), Logger.LogLevel.INFO);
                         }));
+
+                        logger.space();
+                        logger.write();
                         confirmBuilder.show();
                     });
 
@@ -168,21 +209,29 @@ public class MainActivity extends AppCompatActivity {
                     if (!entryToEdit.equals(returnedChannel.getChannelID())) {
                         // Delete the old entry
                         deleteChannelData(entryToEdit);
+                        logger.log("Channel ID was changed - deleted old ID", Logger.LogLevel.WARNING);
                     }
-                    if (!GenericTools.saveAndFetchChannelData(this, returnedChannel))
+
+                    // Write the new data
+                    if (!GenericTools.saveAndFetchChannelData(this, returnedChannel)) {
                         GenericTools.showErrorMessage(this, "Could not write channel to filesystem. Please report this error.");
-                } else if (resultCode == 0) {
+                        logger.log("Failed to write channel data " + returnedChannel.getChannelName() + " to the filesystem", Logger.LogLevel.ERROR);
+                    }
+                } else if (resultCode == 0)
                     // User cancelled it. Do nothing
-                    System.out.println("User cancelled the edit");
-                } else {
-                    // Some other error - notify the user
-                    System.out.println("Something went terribly, terribly wrong. You should not be reading this.");
+                    logger.log("User cancelled edit activity", Logger.LogLevel.INFO);
+                else {
+                    // Some other error
+                    logger.log("Unknown result returned from activity", Logger.LogLevel.WARNING);
                 }
                 break;
             default:
-                System.out.println("Received unknown code: " + requestCode);
+                logger.log("Unknown result returned from activity", Logger.LogLevel.WARNING);
                 break;
         }
+        logger.space();
+        logger.write();
+
         MainActivity.super.onActivityResult(requestCode, resultCode, returnedData);
     }
 
@@ -192,10 +241,15 @@ public class MainActivity extends AppCompatActivity {
      * @param channel the Channel object to add.
      */
     private void addChannelToView(Channel channel) {
-        System.out.println(channel.getRSSURL());
+        logger.space();
+        logger.log("Asked to add channel " + channel.getChannelName(), Logger.LogLevel.INFO);
+
         // Check if the "no channel" message is still there - if it is, delete it
         View noChannelBox = findViewById(R.id.boxNoChannels);
-        if (noChannelBox != null) noChannelBox.setVisibility(View.GONE);
+        if (noChannelBox.getVisibility() != View.GONE) {
+            logger.log("First entry addition requested - hiding 'No Channel' box", Logger.LogLevel.INFO);
+            noChannelBox.setVisibility(View.GONE);
+        }
 
         // Create an inflater so we can customize resources
         LayoutInflater inflater = (LayoutInflater) getSystemService(Context.LAYOUT_INFLATER_SERVICE);
@@ -219,41 +273,55 @@ public class MainActivity extends AppCompatActivity {
             editChannelIntent.putExtra("entry_to_edit", channel.getChannelID());
             editChannelIntent.putExtra("channel_to_edit", channel);
             editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
+            logger.log("Asking to edit channel " + channel.getChannelName(), Logger.LogLevel.INFO);
             startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
         });
 
         // Add delete listener
         entryToAdd.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
+            logger.space();
+            logger.log("Attempting to delete channel " + channel.getChannelName(), Logger.LogLevel.INFO);
             // Show a confirmation dialogue
             AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
             confirmBuilder.setTitle("Delete " + channel.getChannelName() + "?");
             confirmBuilder.setMessage("Are you sure you want to stop receiving notifications from " + channel.getChannelName() + "?");
             confirmBuilder.setCancelable(true);
             confirmBuilder.setPositiveButton("Yes", (dialogInterface, i) -> {
+                logger.log("User confirmed deletion", Logger.LogLevel.INFO);
                 // Now delete the entry
                 ((LinearLayout) entryToAdd.getParent()).removeView(entryToAdd);
-                if (deleteChannelData(channel.getChannelID()))
+                if (deleteChannelData(channel.getChannelID())) {
                     GenericTools.showErrorMessage(this, channel.getChannelName() + " deleted");
-                else
+                    logger.log("Deleted channel " + channel.getChannelName());
+                }
+                else {
                     GenericTools.showErrorMessage(this, "Entry " + channel.getChannelName() + " could not be deleted!");
+                    logger.log("Failed to delete channel " + channel.getChannelName(), Logger.LogLevel.ERROR);
+                }
 
-                System.out.println("About to remove");
                 // Re-add the "no channel" message if there are no entries left
                 if (((LinearLayout) findViewById(R.id.boxChannelsHolder)).getChildCount() == 0) {
                     // There are none left
-                    System.out.println("none left");
-                    if (noChannelBox != null) noChannelBox.setVisibility(View.VISIBLE);
+                    if (noChannelBox.getVisibility() != View.VISIBLE) {
+                        noChannelBox.setVisibility(View.VISIBLE);
+                        logger.log("Last entry removed - making 'No Channel' box visible", Logger.LogLevel.INFO);
+                    }
                 }
             });
             confirmBuilder.setNegativeButton("Cancel", ((dialogInterface, i) -> {
-                // User cancelled it
-                System.out.println("Entry not deleted");
+                logger.log("User cancelled deletion", Logger.LogLevel.INFO);
             }));
+
+            logger.space();
+            logger.write();
             confirmBuilder.show();
         });
 
         // Add the entry to the screen
         ((LinearLayout) findViewById(R.id.boxChannelsHolder)).addView(entryToAdd);
+        logger.log("Added channel to home page", Logger.LogLevel.INFO);
+        logger.space();
+        logger.write();
     }
 
     private boolean deleteChannelData(String idToDelete) {
