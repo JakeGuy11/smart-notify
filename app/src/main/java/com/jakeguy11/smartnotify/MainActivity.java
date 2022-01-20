@@ -28,9 +28,19 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Create the logger
+        String loggerFileName = String.valueOf(System.currentTimeMillis());
+        Logger logger = new Logger(loggerFileName, this.getClass().getSimpleName(), getApplicationContext());
+        logger.log("Starting logger...", Logger.LogLevel.INFO);
+
         // Configure the action bar
         ActionBar actionBar = getSupportActionBar();
-        if (actionBar != null) actionBar.setTitle("Home");
+        if (actionBar != null) {
+            actionBar.setTitle("Home");
+            logger.log("Set action bar title to 'Home'", Logger.LogLevel.VERBOSE);
+        } else logger.log("Failed to set action bar title", Logger.LogLevel.WARNING);
+
+        logger.write();
 
         // Add a listener for the Add button
         findViewById(R.id.btnAddChannel).setOnClickListener(view -> {

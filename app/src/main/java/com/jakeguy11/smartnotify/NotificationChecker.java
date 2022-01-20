@@ -56,7 +56,7 @@ public class NotificationChecker extends BroadcastReceiver {
 
                 // If the channel's new, initialize it with the latest upload
                 if (!currentChannel.isInitialized()) {
-                    String idToInit = getVideoInfo(entries, 0)[0];
+                    String idToInit = getVideoInfo(entries, 1)[0];
                     currentChannel.initialize(idToInit);
                     System.out.println("Initialized with id " + idToInit);
                 } else {

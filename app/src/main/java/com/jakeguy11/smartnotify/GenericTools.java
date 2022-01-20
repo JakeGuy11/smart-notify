@@ -26,9 +26,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.List;
+import java.util.Objects;
 
 public class GenericTools {
 
@@ -43,14 +46,22 @@ public class GenericTools {
     public static File[] getAllJSONs(Context context) {
         File dir = context.getFilesDir();
         List<File> jsonFiles = new ArrayList<>();
-        for (File currentDir : dir.listFiles()) {
+        for (File currentDir : Objects.requireNonNull(dir.listFiles())) {
+
+            // Skip if it's not a directory
+            if (!currentDir.isDirectory()) continue;
+
+            // If the directory is the log dir, skip
+            if (currentDir.getName().equals("logs")) continue;
+
+            // Go through each dir
             File[] jsonFilesFromCurrentDir = currentDir.listFiles(new FileFilter() {
                 @Override
                 public boolean accept(File file) {
                     return file.getName().contains(".json");
                 }
             });
-            jsonFiles.addAll(Arrays.asList(jsonFilesFromCurrentDir));
+            jsonFiles.addAll(Arrays.asList(Objects.requireNonNull(jsonFilesFromCurrentDir)));
         }
         return jsonFiles.toArray(new File[0]);
     }
