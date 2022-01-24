@@ -23,11 +23,16 @@ import android.widget.Toast;
 
 public class AddChannelActivity extends AppCompatActivity {
 
+    Logger logger;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Set the main activity as the current view
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_channel);
+
+        String loggerName = getIntent().getStringExtra("logger_name");
+        logger = new Logger(loggerName, this.getClass().getSimpleName(), false, getApplicationContext());
 
         // Configure the action bar
         ActionBar actionBar = getSupportActionBar();

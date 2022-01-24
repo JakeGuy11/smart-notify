@@ -12,11 +12,10 @@ import java.util.Calendar;
 
 public class Logger {
 
-    private File logFile;
-    private FileWriter writer = null;
     private PrintWriter printer = null;
-    private String className;
+    private final String className;
     private boolean valid = true;
+    private boolean verbose = false;
 
     /**
      * The different urgencies to log with
@@ -34,25 +33,30 @@ public class Logger {
      *
      * @param fileStem The name of the file to log to (without an extension or path).
      * @param cls The name  of the class to write from.
+     * @param verboseMode whether or not to print messages with priority level VERBOSE. Default is false.
      * @param cxt The context of the calling class.
      */
-    public Logger(String fileStem, String cls, Context cxt) {
+    public Logger(String fileStem, String cls, boolean verboseMode, Context cxt) {
         // First make the directory for the logs if it doesn't exist
         createLogDir(cxt);
 
         // Next, create the actual file. Overwrite if it exists
-        this.logFile = new File(cxt.getFilesDir() + "/logs/" + fileStem + ".log");
+        File logFile = new File(cxt.getFilesDir() + "/logs/" + fileStem + ".log");
 
         // Create the fileWriter
+        FileWriter writer = null;
         try {
-            this.writer = new FileWriter(this.logFile, true);
+            writer = new FileWriter(logFile, true);
         } catch (IOException e) { this.valid = false; }
 
         // Create the actual printer
-        this.printer = new PrintWriter(new BufferedWriter(this.writer));
+        this.printer = new PrintWriter(new BufferedWriter(writer));
 
         // Assign the className
         this.className = cls;
+
+        // Assign whether or not to print verbose stuff
+        this.verbose = verboseMode;
     }
 
     /**
@@ -64,6 +68,7 @@ public class Logger {
     public void log(String msg, LogLevel lv) {
         // Make sure we're valid
         if (!this.valid) return;
+        if (!this.verbose && lv == LogLevel.VERBOSE) return;
 
         // First, get the date/time to log with
         String timeStamp = getDateTime();

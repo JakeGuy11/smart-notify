@@ -2,21 +2,33 @@ package com.jakeguy11.smartnotify;
 
 import static android.content.Context.NOTIFICATION_SERVICE;
 
+import android.app.AlarmManager;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.StrictMode;
 
 import androidx.core.app.NotificationCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.File;
+import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class NotificationChecker extends BroadcastReceiver {
 
@@ -24,13 +36,20 @@ public class NotificationChecker extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
+        // Create the logger
+        String loggerFile = "background";
+        logger = new Logger(loggerFile, this.getClass().getSimpleName(), false, context);
 
-        String loggerFile = intent.getStringExtra("logger_name");
-        logger = new Logger(loggerFile, this.getClass().getSimpleName(), context);
+        // Update all the entries
+        update(context);
 
+        // Write the logger
         logger.space();
-        logger.space();
-        logger.log("Starting channel checks...", Logger.LogLevel.INFO);
+        logger.write();
+    }
+
+    private void update(Context context) {
+        logger.log("Checking channels…", Logger.LogLevel.INFO);
 
         // Get all the JSONs
         File[] filesToCheck = GenericTools.getAllJSONs(context);
@@ -74,7 +93,7 @@ public class NotificationChecker extends BroadcastReceiver {
                             // This is a new video - check if it's live
                             // Depending on the answer, send the notification
                             String videoUrl = "https://www.youtube.com/watch?v=" + videoID;
-                            showNotification(context, currentChannel, videoTitle, videoUrl, videoIsLivestream(videoUrl));
+                            handleVideo(currentChannel, videoTitle, videoUrl, context);
                             currentChannel.updateLatestVideo(videoID);
                         } else {
                             if (videoID.equals(currentChannel.getLatestUploadID())) {
@@ -98,12 +117,56 @@ public class NotificationChecker extends BroadcastReceiver {
 
             } catch (Exception e) {
                 logger.log("Failed to parse channel: " + e.getClass().getSimpleName(), Logger.LogLevel.ERROR);
+                e.printStackTrace();
             }
         }
+    }
 
-        logger.space();
-        logger.space();
-        logger.write();
+    private void handleVideo(Channel channel, String title, String videoUrl, Context context) throws ParseException {
+        logger.log("Handling something");
+        // Get the site code
+        Document page;
+        try {
+            page = getChannelPage(videoUrl);
+        } catch (IOException e) {
+            logger.log("Failed to fetch the video site at url " + videoUrl, Logger.LogLevel.ERROR);
+            return;
+        }
+
+        logger.log("Handling video " + title);
+
+        Elements indicator = page.getElementsByAttributeValue("itemprop", "isLiveBroadcast");
+
+        if (indicator.size() == 0) {
+            // It's not live
+            logger.log("Indicator is zero - normal video");
+            showUploadNotification(channel, title, videoUrl, context);
+        } else {
+            logger.log("Indicator is >0 - live");
+            // It is live - get the time it's supposed to start
+            Element timeIndicator = page.getElementsByAttributeValue("itemprop", "startDate").get(0);
+            String rawTime = timeIndicator.attr("content"); // in format 2022-01-24T13:00:00+00:00
+            String[] plainTimes = rawTime.split("[T+]");
+
+            // Format the time
+            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+            Date date = dateFormatter.parse(plainTimes[0] + " " + plainTimes[1]);
+            long millis = date.getTime();
+
+            System.out.println(millis);
+
+            // Schedule the notification
+            scheduleNotification(channel, title, videoUrl, System.currentTimeMillis() + 20000, context);
+        }
+
+    }
+
+    private Document getChannelPage(String url) throws IOException {
+        // Set the thread policy
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
+
+        // Get the page
+        return Jsoup.connect(url).get();
     }
 
     private String[] getVideoInfo(JSONArray entries, int index) throws JSONException {
@@ -118,20 +181,25 @@ public class NotificationChecker extends BroadcastReceiver {
         return new String[]{entryID, entryTitle};
     }
 
-    private boolean videoIsLivestream(String videoUrl) {
-        return false;
+    private void scheduleNotification(Channel channel, String videoTitle, String videoUrl, long time, Context context) {
+        // Create the notification intent
+        Intent futureIntent = new Intent(context, FutureNotification.class);
+        futureIntent.putExtra("channel", channel.toString());
+        futureIntent.putExtra("title", videoTitle);
+        futureIntent.putExtra("url", videoUrl);
+
+        // Schedule the notification
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context.getApplicationContext(), 1248812527, futureIntent, 0);
+        AlarmManager futureNotifManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        futureNotifManager.set(AlarmManager.RTC_WAKEUP, time, pendingIntent);
     }
 
-    private void showNotification(Context context, Channel channel, String videoTitle, String videoUrl, boolean isLivestream) {
+    private void showUploadNotification(Channel channel, String videoTitle, String videoUrl, Context context) {
         if (channel == null) return;
-
-        logger.space();
-        logger.log("Sending notification for channel " + channel.getChannelName() + " for video " + videoUrl, Logger.LogLevel.INFO);
+        logger.log("Sending notification for channel " + channel.getChannelName() + " for video " + videoUrl);
 
         // Start by generating our params for the notification
-        String title = "";
-        if (isLivestream) title = channel.getChannelName() + " is live!";
-        else title = channel.getChannelName() + " has uploaded a video";
+        String title = channel.getChannelName() + " has uploaded a video";
 
         // Get the PFP as a bitmap
         File imageFile = new File(context.getFilesDir() + File.separator + channel.getChannelID() + File.separator + channel.getChannelID() + ".png");
@@ -163,33 +231,6 @@ public class NotificationChecker extends BroadcastReceiver {
             logger.log("Sent notification for channel " + channel.getChannelName(), Logger.LogLevel.INFO);
         } catch (Exception e) { logger.log("Failed to send notification: " + e.getClass().getSimpleName(), Logger.LogLevel.ERROR); }
 
-        logger.space();
         logger.write();
     }
-
-    private void showBlankNotif(Context context) {
-        // Create our notification manager
-        NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, "default");
-
-        // Set the notification params
-        mBuilder.setContentTitle("I am sending a notif");
-        mBuilder.setContentText(Long.toString(System.currentTimeMillis()));
-        mBuilder.setSmallIcon(R.drawable.heart_checked);
-        mBuilder.setAutoCancel(true);
-
-        // Do some mandatory android stuff
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel notificationChannel = new NotificationChannel("10001", "NOTIFICATION_CHANNEL_NAME", importance);
-            mBuilder.setChannelId("10001");
-            assert mNotificationManager != null;
-            mNotificationManager.createNotificationChannel(notificationChannel);
-        }
-        assert mNotificationManager != null;
-
-        // Send the notification
-        mNotificationManager.notify((int) System.currentTimeMillis(), mBuilder.build());
-    }
-
 }

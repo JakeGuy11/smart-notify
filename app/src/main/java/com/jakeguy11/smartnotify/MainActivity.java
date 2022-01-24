@@ -23,6 +23,7 @@ import java.util.List;
 public class MainActivity extends AppCompatActivity {
 
     Logger logger;
+    final String loggerFileName = "main";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +32,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         // Create the logger
-        String loggerFileName = String.valueOf(System.currentTimeMillis());
-        logger = new Logger(loggerFileName, this.getClass().getSimpleName(), getApplicationContext());
+        logger = new Logger(loggerFileName, this.getClass().getSimpleName(), false, getApplicationContext());
         logger.log("Starting logger...", Logger.LogLevel.INFO);
 
         // Configure the action bar
@@ -46,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnAddChannel).setOnClickListener(view -> {
             Intent addChannelIntent = new Intent(getApplicationContext(), AddChannelActivity.class);
             addChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
+            addChannelIntent.putExtra("logger_name", loggerFileName);
             startActivityForResult(addChannelIntent, 738212183); // This code doesn't matter, it just needs to be unique
 
             logger.log("Successfully Added listener for Add Channel button", Logger.LogLevel.INFO);
@@ -60,16 +61,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         try {
-            // Start the periodic service
+
+            System.out.println("About to start it");
             Intent periodicIntent = new Intent(this, NotificationChecker.class);
-            periodicIntent.putExtra("logger_name", loggerFileName);
-            PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 1248812527, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-            AlarmManager manager = (AlarmManager) getSystemService(ALARM_SERVICE);
-            manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 10000, 60000, pendingIntent);
-            logger.log("Started AlarmManager for channel parser", Logger.LogLevel.INFO);
+            PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 500, periodicIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+            AlarmManager manager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            manager.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 60000, pendingIntent);
+            logger.log("Started AlarmManager", Logger.LogLevel.INFO);
+
         } catch (Exception e) {
             logger.log("FAILED TO START PERIODIC PROCESS", Logger.LogLevel.FATAL);
             logger.write();
+            GenericTools.showErrorMessage(this, "FATAL ERROR: Could not start periodic task.");
             android.os.Process.killProcess(android.os.Process.myPid());
         }
 
@@ -157,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
                         editChannelIntent.putExtra("entry_to_edit", returnedChannel.getChannelID());
                         editChannelIntent.putExtra("channel_to_edit", returnedChannel);
                         editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
+                        editChannelIntent.putExtra("logger_name", loggerFileName);
                         logger.log("Asking to edit channel " + returnedChannel.getChannelName(), Logger.LogLevel.INFO);
                         startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
                     });
@@ -242,7 +246,6 @@ public class MainActivity extends AppCompatActivity {
      */
     private void addChannelToView(Channel channel) {
         logger.space();
-        logger.log("Asked to add channel " + channel.getChannelName(), Logger.LogLevel.INFO);
 
         // Check if the "no channel" message is still there - if it is, delete it
         View noChannelBox = findViewById(R.id.boxNoChannels);
@@ -273,13 +276,13 @@ public class MainActivity extends AppCompatActivity {
             editChannelIntent.putExtra("entry_to_edit", channel.getChannelID());
             editChannelIntent.putExtra("channel_to_edit", channel);
             editChannelIntent.putExtra("channels_already_added", channelsAlreadyAdded());
+            editChannelIntent.putExtra("logger_name", loggerFileName);
             logger.log("Asking to edit channel " + channel.getChannelName(), Logger.LogLevel.INFO);
             startActivityForResult(editChannelIntent, 6697101); // This code doesn't matter, it just needs to be unique
         });
 
         // Add delete listener
         entryToAdd.findViewById(R.id.boxRemoveButton).setOnClickListener(ev -> {
-            logger.space();
             logger.log("Attempting to delete channel " + channel.getChannelName(), Logger.LogLevel.INFO);
             // Show a confirmation dialogue
             AlertDialog.Builder confirmBuilder = new AlertDialog.Builder(ev.getContext());
@@ -312,15 +315,12 @@ public class MainActivity extends AppCompatActivity {
                 logger.log("User cancelled deletion", Logger.LogLevel.INFO);
             }));
 
-            logger.space();
             logger.write();
             confirmBuilder.show();
         });
 
         // Add the entry to the screen
         ((LinearLayout) findViewById(R.id.boxChannelsHolder)).addView(entryToAdd);
-        logger.log("Added channel to home page", Logger.LogLevel.INFO);
-        logger.space();
         logger.write();
     }
 
