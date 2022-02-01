@@ -19,6 +19,12 @@ public class FutureNotification extends BroadcastReceiver {
     Logger logger;
     Context context;
 
+    /**
+     * Run whenever a future notification is scheduled
+     *
+     * @param cxt The context of the app
+     * @param intent any extra info needed
+     */
     @Override
     public void onReceive(Context cxt, Intent intent) {
         this.context = cxt;
@@ -35,6 +41,12 @@ public class FutureNotification extends BroadcastReceiver {
         logger.write();
     }
 
+    /**
+     * Show a notification for a livestream
+     * @param channel The channel the notification is for
+     * @param videoTitle The title of the video
+     * @param videoUrl The URL to the video
+     */
     private void showNotification(Channel channel, String videoTitle, String videoUrl) {
         if (channel == null) return;
 

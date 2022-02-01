@@ -142,6 +142,11 @@ public class Channel implements Serializable {
         return this.channelID != null;
     }
 
+    /**
+     * Get the URL of the RSS feed associated with the channel
+     *
+     * @return The URL as a string
+     */
     public String getRSSURL() {
         if (this.channelType == ChannelType.CHANNEL) {
             return "https://www.youtube.com/feeds/videos.xml?channel_id=" + this.channelID;
@@ -152,6 +157,11 @@ public class Channel implements Serializable {
         }
     }
 
+    /**
+     * Get the readable ID of the channel
+     *
+     * @return the readable ID
+     */
     public String getReadableID() {
         return this.readableID;
     }
@@ -299,6 +309,12 @@ public class Channel implements Serializable {
         return this.uploadKeywords;
     }
 
+    /**
+     * Parse a youtube page to get the TRUE id of the channel (not nickname)
+     *
+     * @param id The given ID
+     * @return the true id
+     */
     private String getTrueId(String id) {
         Document site = getChannelSite(id);
         if (site == null) return null;
@@ -333,6 +349,11 @@ public class Channel implements Serializable {
         return true;
     }
 
+    /**
+     * Get a channel as an HTML/DOM document
+     * @param id the ID of the channel
+     * @return The channel document
+     */
     private Document getChannelSite(String id) {
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
 

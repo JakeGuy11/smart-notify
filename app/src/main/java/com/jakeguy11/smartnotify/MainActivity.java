@@ -25,6 +25,11 @@ public class MainActivity extends AppCompatActivity {
     Logger logger;
     final String loggerFileName = "main";
 
+    /**
+     * Method run when the app is started
+     *
+     * @param savedInstanceState The last saved state, or a new Bundle if there is none
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Set the main activity as the current view
@@ -324,12 +329,24 @@ public class MainActivity extends AppCompatActivity {
         logger.write();
     }
 
+    /**
+     * Delete all the data associated with a channel
+     *
+     * @param idToDelete The ID of the channel to delete
+     * @return whether the deletion was a success or failure
+     */
     private boolean deleteChannelData(String idToDelete) {
         System.out.println("Asked to delete id " + idToDelete);
         File file = new File(this.getFilesDir() + File.separator + idToDelete);
         return deleteFolderRecursive(file);
     }
 
+    /**
+     * Delete a folder with other folders and/or files in it
+     *
+     * @param fileOrDirectory The file or directory to delete
+     * @return Whether the deletion was a success or failure
+     */
     private boolean deleteFolderRecursive(File fileOrDirectory) {
 
         if (fileOrDirectory.isDirectory())
@@ -339,6 +356,11 @@ public class MainActivity extends AppCompatActivity {
         return fileOrDirectory.delete();
     }
 
+    /**
+     * Get a list of the IDs of existing channels
+     *
+     * @return a list of the IDs of existing channels
+     */
     private String[] channelsAlreadyAdded() {
         List<String> idsList = new ArrayList<>();
         for (File dir : getFilesDir().listFiles()) {

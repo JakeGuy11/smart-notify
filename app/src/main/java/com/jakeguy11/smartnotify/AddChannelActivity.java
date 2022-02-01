@@ -25,6 +25,11 @@ public class AddChannelActivity extends AppCompatActivity {
 
     Logger logger;
 
+    /**
+     * This is run when the app is opened
+     *
+     * @param savedInstanceState The bundle of a past saved state, or a new one if there is one
+     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Set the main activity as the current view
@@ -204,12 +209,22 @@ public class AddChannelActivity extends AppCompatActivity {
 
     }
 
+    /**
+     * Show a Toast error message (little grey popup at the bottom of the screen)
+     *
+     * @param msg The message to show
+     */
     private void showErrorMessage(String msg) {
         int length = Toast.LENGTH_LONG;
         if (msg.length() <= 30) length = Toast.LENGTH_SHORT;
         Toast.makeText(getApplicationContext(),msg, length).show();
     }
 
+    /**
+     * Populate the form with the info of a channel
+     *
+     * @param channel The channel to update with
+     */
     private void populateForm(Channel channel) {
         // Set the channel name
         ((EditText)findViewById(R.id.textName)).setText(channel.getChannelName());

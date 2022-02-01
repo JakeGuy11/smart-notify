@@ -34,6 +34,12 @@ public class NotificationChecker extends BroadcastReceiver {
 
     Logger logger;
 
+    /**
+     * Method run when the notification checker is called
+     *
+     * @param context The context of the app
+     * @param intent any additional information
+     */
     @Override
     public void onReceive(Context context, Intent intent) {
         // Create the logger
@@ -48,6 +54,11 @@ public class NotificationChecker extends BroadcastReceiver {
         logger.write();
     }
 
+    /**
+     * Update all the entries by fetching the RSS feed.
+     *
+     * @param context the context of the app
+     */
     private void update(Context context) {
         logger.log("Checking channels…", Logger.LogLevel.INFO);
 
@@ -122,6 +133,15 @@ public class NotificationChecker extends BroadcastReceiver {
         }
     }
 
+    /**
+     * Show a notification for a new video
+     *
+     * @param channel The channel with a new video
+     * @param title The title of the video
+     * @param videoUrl The URL of the video
+     * @param context The context of the app
+     * @throws ParseException If the webpage could not be parsed
+     */
     private void handleVideo(Channel channel, String title, String videoUrl, Context context) throws ParseException {
         logger.log("Handling something");
         // Get the site code
@@ -146,14 +166,25 @@ public class NotificationChecker extends BroadcastReceiver {
             // It is live - get the time it's supposed to start
             Element timeIndicator = page.getElementsByAttributeValue("itemprop", "startDate").get(0);
             String rawTime = timeIndicator.attr("content"); // in format 2022-01-24T13:00:00+00:00
-            String[] plainTimes = rawTime.split("[T+]");
+            String[] plainTimes = rawTime.split("[-T:+]");
 
             // Format the time
-            SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
-            Date date = dateFormatter.parse(plainTimes[0] + " " + plainTimes[1]);
+            // SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+            // Date date = dateFormatter.parse(plainTimes[0] + " " + plainTimes[1]);
+            // long millis = date.getTime();
+
+            Date date = new Date();
+            date.UTC(Integer.parseInt(plainTimes[0]),
+                    Integer.parseInt(plainTimes[1]),
+                    Integer.parseInt(plainTimes[2]),
+                    Integer.parseInt(plainTimes[3]),
+                    Integer.parseInt(plainTimes[4]),
+                    Integer.parseInt(plainTimes[5]));
+
             long millis = date.getTime();
 
             System.out.println(millis);
+            System.out.println(date);
 
             // Schedule the notification
             scheduleNotification(channel, title, videoUrl, System.currentTimeMillis() + 20000, context);
@@ -161,6 +192,13 @@ public class NotificationChecker extends BroadcastReceiver {
 
     }
 
+    /**
+     * Get a youtube channel page as a HTML/DOM document
+     *
+     * @param url The URL to get
+     * @return The page as an HTML/DOM element
+     * @throws IOException When the page could not be read.
+     */
     private Document getChannelPage(String url) throws IOException {
         // Set the thread policy
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
@@ -169,6 +207,14 @@ public class NotificationChecker extends BroadcastReceiver {
         return Jsoup.connect(url).get();
     }
 
+    /**
+     * Get the infos of a video from its JSON entry
+     *
+     * @param entries The entry list to get data from
+     * @param index The index of the entry to get data from
+     * @return an array containing [(video's ID), (video's title)]
+     * @throws JSONException When the JSON is invalid
+     */
     private String[] getVideoInfo(JSONArray entries, int index) throws JSONException {
         // Get the entry at the wanted index
         JSONObject wantedEntry = entries.getJSONObject(index);
@@ -181,6 +227,15 @@ public class NotificationChecker extends BroadcastReceiver {
         return new String[]{entryID, entryTitle};
     }
 
+    /**
+     * Schedule a notification for the future
+     *
+     * @param channel The channel the notification is for
+     * @param videoTitle The title of the video
+     * @param videoUrl The URL of the video
+     * @param time The time (in system millis) to send the notification
+     * @param context the context of the app
+     */
     private void scheduleNotification(Channel channel, String videoTitle, String videoUrl, long time, Context context) {
         // Create the notification intent
         Intent futureIntent = new Intent(context, FutureNotification.class);
@@ -194,6 +249,14 @@ public class NotificationChecker extends BroadcastReceiver {
         futureNotifManager.set(AlarmManager.RTC_WAKEUP, time, pendingIntent);
     }
 
+    /**
+     * Show a notification for an upload
+     *
+     * @param channel The channel the video's from
+     * @param videoTitle The title of the video
+     * @param videoUrl The URL of the video
+     * @param context The context of the app
+     */
     private void showUploadNotification(Channel channel, String videoTitle, String videoUrl, Context context) {
         if (channel == null) return;
         logger.log("Sending notification for channel " + channel.getChannelName() + " for video " + videoUrl);

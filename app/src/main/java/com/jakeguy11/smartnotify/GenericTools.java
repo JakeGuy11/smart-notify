@@ -35,6 +35,12 @@ import java.util.Objects;
 
 public class GenericTools {
 
+    /**
+     * Convert an XML (ex. rss feed) to a JSON
+     *
+     * @param xmlContent The XML content as a string
+     * @return the JSONified version of the XML
+     */
     public static JSONObject convertXMLtoJSON(String xmlContent) {
         try {
             return XML.toJSONObject(xmlContent);
@@ -43,6 +49,11 @@ public class GenericTools {
         }
     }
 
+    /**
+     * Get all the saved JSONs, anywhere in this app's storage
+     * @param context The context of the app
+     * @return An array of the JSON files
+     */
     public static File[] getAllJSONs(Context context) {
         File dir = context.getFilesDir();
         List<File> jsonFiles = new ArrayList<>();
@@ -81,6 +92,12 @@ public class GenericTools {
         }
     }
 
+    /**
+     * Get the content of a file as a string
+     *
+     * @param file The file to get the content of
+     * @return the content of the file
+     */
     public static String getFileString(File file) {
         StringBuilder text = new StringBuilder();
         try {
@@ -99,6 +116,12 @@ public class GenericTools {
         return text.toString();
     }
 
+    /**
+     * Turn a bitmap into a rounded image
+     *
+     * @param bitmap The raw bitmap
+     * @return the rounded bitmap
+     */
     public static Bitmap getRoundedCroppedBitmap(Bitmap bitmap) {
         int widthLight = bitmap.getWidth();
         int heightLight = bitmap.getHeight();
@@ -121,6 +144,12 @@ public class GenericTools {
         return output;
     }
 
+    /**
+     * Get the content of an internet site as a string
+     *
+     * @param urlString The URL to fetch
+     * @return the content of the website
+     */
     public static String getUrlContent(String urlString) {
         try {
             StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder().permitAll().build());
@@ -141,12 +170,26 @@ public class GenericTools {
         }
     }
 
+    /**
+     * Resize a drawable image to the default 128x128
+     *
+     * @param context The context of the app
+     * @param image the image to resize
+     * @return the resized image
+     */
     public static Drawable resizeDrawable(Context context, Drawable image) {
         Bitmap b = getRoundedCroppedBitmap(((BitmapDrawable) image).getBitmap());
         Bitmap bitmapResized = Bitmap.createScaledBitmap(b, 128, 128, false);
         return new BitmapDrawable(context.getResources(), bitmapResized);
     }
 
+    /**
+     * Update the data of a channel from remote, then write it to the filesystem
+     *
+     * @param context The context of the app
+     * @param channel The channel to update and save
+     * @return whether it was a success or failure
+     */
     public static boolean saveAndFetchChannelData(Context context, Channel channel) {
         try {
             // Create the file's directories
@@ -181,6 +224,11 @@ public class GenericTools {
         }
     }
 
+    /**
+     * Show a Toast message (grey popup at the bottom of the screen)
+     * @param context The context of the app
+     * @param msg the message to send
+     */
     public static void showErrorMessage(Context context, String msg) {
         int length = Toast.LENGTH_LONG;
         if (msg.length() <= 30) length = Toast.LENGTH_SHORT;
